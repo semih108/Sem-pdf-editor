@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Blattwerk PDF</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,7 +38,7 @@
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--fg); font-family: var(--f-ui); font-size: 14px; overflow: hidden; }
-.app { height: 100%; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; }
+.app { height: 100%; display: grid; grid-template-rows: auto auto auto minmax(0,1fr) auto; grid-template-columns: minmax(0,1fr); }
 button, input, select { font: inherit; color: inherit; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -65,7 +66,7 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 .toolbar { display: flex; align-items: center; gap: 4px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto;
   padding-block: 6px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .tool { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 64px; padding: 5px 6px; border-radius: 7px;
-  border: 1px solid transparent; background: none; cursor: pointer; font-size: 11.5px; color: var(--muted); }
+  border: 1px solid transparent; background: none; cursor: pointer; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
 .tool:hover { background: var(--bg); color: var(--fg); }
 .tool[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 8px; flex: none; }
@@ -140,11 +141,73 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
   padding: 9px 16px; border-radius: 8px; font-size: 13px; z-index: 60; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
 
+/* contextual property bar: fixed height so the page never jumps when it changes */
+.propbar { display: flex; align-items: center; gap: 4px; height: 40px; box-sizing: border-box; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; white-space: nowrap;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.propempty { font-size: 12.5px; color: var(--muted); padding: 0 4px; }
+.propbar > * { flex: none; }
+.pbtn { height: 28px; min-width: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.pbtn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.pbtn svg.i { width: 16px; height: 16px; }
+.pgroup { display: inline-flex; gap: 2px; }
+.prop input[type=checkbox] { accent-color: var(--accent); margin: 0; }
+
+/* page overlays */
+.hit { fill: rgba(255, 170, 0, .35); pointer-events: none; }
+.hit.cur { fill: rgba(255, 110, 0, .55); stroke: #e25a00; }
+.marquee { fill: rgba(44, 82, 207, .08); stroke: var(--accent); stroke-dasharray: 4 3; pointer-events: none; }
+.formLayer { position: absolute; inset: 0; pointer-events: none; }
+.formLayer .ff { position: absolute; box-sizing: border-box; margin: 0; border: 1px solid rgba(44, 82, 207, .35); background: rgba(205, 220, 255, .45);
+  color: #111; font-family: Helvetica, Arial, sans-serif; font-size: calc(var(--s, 1) * var(--fs, 11) * 1px); padding: 0 calc(var(--s, 1) * 2px); border-radius: 2px; pointer-events: auto; }
+.formLayer .ff:hover, .formLayer .ff:focus { background: rgba(205, 220, 255, .75); }
+.formLayer textarea.ff { resize: none; line-height: 1.15; padding-top: calc(var(--s, 1) * 1px); }
+.formLayer .ff[type=checkbox], .formLayer .ff[type=radio] { appearance: none; -webkit-appearance: none; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.formLayer .ff[type=radio] { border-radius: 50%; }
+.formLayer .ff[type=checkbox]:checked::after { content: "✓"; font-size: calc(var(--s, 1) * var(--fs, 11) * 1.1px); line-height: 1; color: #111; }
+.formLayer .ff[type=radio]:checked::after { content: ""; width: 50%; height: 50%; border-radius: 50%; background: #111; }
+.formLayer .ff:disabled { background: transparent; border-color: transparent; }
+.viewer:not(.t-select) .formLayer .ff { pointer-events: none; }
+
+/* search */
+.main { position: relative; }
+.searchbar { position: absolute; top: 10px; right: 28px; z-index: 30; display: flex; align-items: center; gap: 4px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 9px; padding: 5px; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.searchbar input { width: 220px; max-width: 46vw; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; background: var(--bg); }
+.searchbar .btn { height: 30px; }
+.searchbar .cnt { font-size: 12px; color: var(--muted); min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* note popover */
+.notepop { position: fixed; z-index: 45; width: min(300px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 10px; display: grid; gap: 8px; }
+.notepop textarea { width: 100%; box-sizing: border-box; min-height: 110px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--bg); font: inherit; }
+.notepop .row .btn { height: 30px; }
+
+/* dialogs */
+.card label.opt { display: flex; gap: 8px; align-items: center; font-size: 13.5px; cursor: pointer; }
+.card input[type=text] { height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 10px; background: var(--bg); width: 100%; box-sizing: border-box; }
+.siglist { display: flex; gap: 8px; flex-wrap: wrap; }
+.sigitem { position: relative; width: 120px; height: 48px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; padding: 4px; }
+.sigitem img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.sigitem .x { position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+.muted { color: var(--muted); font-size: 12.5px; }
+
+/* print */
+#printArea { display: none; }
+@media print {
+  @page { margin: 0; }
+  html, body { height: auto; overflow: visible; background: #fff; }
+  body > *:not(#printArea) { display: none !important; }
+  #printArea { display: block; }
+  #printArea img { display: block; width: 100%; height: auto; max-height: 100vh; object-fit: contain; break-after: page; page-break-after: always; }
+  #printArea img:last-child { break-after: auto; page-break-after: auto; }
+}
+
 @media (max-width: 760px) {
+  .searchbar { right: 16px; left: 16px; }
+  .searchbar input { flex: 1; width: auto; max-width: none; }
   .main { grid-template-columns: minmax(0,1fr); }
   .thumbs { display: none; }
   .docname, .hide-sm { display: none; }
-  .tool { min-width: 54px; }
+  .tool { min-width: 58px; white-space: normal; text-align: center; line-height: 1.15; flex: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
@@ -166,6 +229,11 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
       <button class="btn icon" id="btnZoomIn" title="Vergrößern" aria-label="Vergrößern"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
       <button class="btn hide-sm" id="btnFit" title="An Fensterbreite anpassen">Breite</button>
     </span>
+    <span class="group">
+      <button class="btn icon" id="btnSearch" title="Im Dokument suchen (Strg+F)" aria-label="Suchen"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+      <button class="btn icon" id="btnPrint" title="Drucken (Strg+P)" aria-label="Drucken"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg></button>
+      <button class="btn icon" id="btnTheme" title="Darstellung: automatisch" aria-label="Darstellung wechseln"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg></button>
+    </span>
     <button class="btn primary" id="btnSave" title="Als PDF speichern (Strg+S)"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Speichern</span></button>
   </header>
 
@@ -177,23 +245,54 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
     <button class="tool" data-tool="text" title="Text einfügen (T)"><svg class="i" viewBox="0 0 24 24"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></svg>Text</button>
     <button class="tool" data-tool="ink" title="Freihand zeichnen (D)"><svg class="i" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg>Zeichnen</button>
     <button class="tool" data-tool="highlight" title="Markieren (H)"><svg class="i" viewBox="0 0 24 24"><path d="M9 14l-3 3v2h4l3-3"/><path d="M9 14l7-7 3 3-7 7z"/><path d="M3 21h9"/></svg>Markieren</button>
-    <button class="tool" data-tool="rect" title="Rechteck (R)"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>Rechteck</button>
+    <button class="tool" data-tool="rect" title="Rechteck (R), mit Umschalt quadratisch"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>Rechteck</button>
+    <button class="tool" data-tool="ellipse" title="Ellipse (E), mit Umschalt kreisrund"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="6.5"/></svg>Ellipse</button>
+    <button class="tool" data-tool="line" title="Linie (L), mit Umschalt in 45°-Schritten"><svg class="i" viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg>Linie</button>
+    <button class="tool" data-tool="arrow" title="Pfeil (A), mit Umschalt in 45°-Schritten"><svg class="i" viewBox="0 0 24 24"><path d="M5 19L19 5M10 5h9v9"/></svg>Pfeil</button>
+    <button class="tool" data-tool="note" title="Notiz / Kommentar (N)"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h14v11l-5 5H5z"/><path d="M14 20v-5h5M8 9h8M8 12.5h5"/></svg>Notiz</button>
     <button class="tool" data-tool="whiteout" title="Bereich weiß abdecken (W)"><svg class="i" viewBox="0 0 24 24"><path d="M4 15l8-8 7 7-5 5H8z"/><path d="M9 10l6 6M3 21h18"/></svg>Abdecken</button>
     <button class="tool" id="btnImage" title="Bild einfügen"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>Bild</button>
     <button class="tool" id="btnSign" title="Unterschrift zeichnen und einfügen"><svg class="i" viewBox="0 0 24 24"><path d="M3 16c2.5 0 3.5-8 6-8s.5 8 3.5 8 2.5-4 4.5-4 1.5 2 4 2"/><path d="M3 20h18"/></svg>Signieren</button>
     <span class="sep"></span>
-    <label class="prop" title="Farbe"><span>Farbe</span>
-      <span class="swatches" id="swatches"></span>
-      <input type="color" id="pColor" value="#d0342c" aria-label="Eigene Farbe">
-    </label>
-    <label class="prop" title="Schriftgröße in Punkt"><span>Schrift</span>
-      <select id="pSize"><option>8</option><option>10</option><option>11</option><option>12</option><option>14</option><option selected>16</option><option>20</option><option>24</option><option>32</option><option>48</option></select>
-    </label>
-    <label class="prop" title="Strichstärke in Punkt"><span>Strich</span><input type="range" id="pWidth" min="0.5" max="12" step="0.5" value="2.5"></label>
-    <span class="sep"></span>
     <button class="tool" id="btnCopyAnn" title="Ausgewähltes Element kopieren (Strg+C), einfügen mit Strg+V" disabled><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2h2"/></svg>Kopieren</button>
     <button class="tool danger" id="btnDelAnn" title="Ausgewähltes Element löschen (Entf)" disabled><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Entfernen</button>
   </nav>
+  <div class="propbar" aria-label="Eigenschaften">
+    <span class="propempty" data-prop="empty">Werkzeug oder Element wählen, um Farbe, Schrift und Strich einzustellen.</span>
+    <label class="prop" title="Farbe" data-prop="color"><span>Farbe</span>
+      <span class="swatches" id="swatches"></span>
+      <input type="color" id="pColor" value="#d0342c" aria-label="Eigene Farbe">
+    </label>
+    <label class="prop" title="Schriftart" data-prop="font"><span>Schrift</span>
+      <select id="pFont"><option value="helv">Helvetica</option><option value="times">Times</option><option value="cour">Courier</option></select>
+    </label>
+    <label class="prop" title="Schriftgröße in Punkt" data-prop="size"><span class="hide-sm">Größe</span>
+      <select id="pSize"><option>8</option><option>10</option><option>11</option><option>12</option><option>14</option><option selected>16</option><option>20</option><option>24</option><option>32</option><option>48</option></select>
+    </label>
+    <span class="prop pgroup" data-prop="style">
+      <button type="button" class="pbtn" id="pBold" aria-pressed="false" title="Fett (Strg+B)" aria-label="Fett"><b>F</b></button>
+      <button type="button" class="pbtn" id="pItalic" aria-pressed="false" title="Kursiv (Strg+I)" aria-label="Kursiv"><i style="font-family:serif">K</i></button>
+    </span>
+    <span class="prop pgroup" data-prop="align" role="group" aria-label="Textausrichtung">
+      <button type="button" class="pbtn" data-align="left" aria-pressed="true" title="Linksbündig" aria-label="Linksbündig"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+      <button type="button" class="pbtn" data-align="center" aria-pressed="false" title="Zentriert" aria-label="Zentriert"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+      <button type="button" class="pbtn" data-align="right" aria-pressed="false" title="Rechtsbündig" aria-label="Rechtsbündig"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+    </span>
+    <label class="prop" title="Strichstärke in Punkt" data-prop="width"><span>Strich</span><input type="range" id="pWidth" min="0.5" max="12" step="0.5" value="2.5"></label>
+    <span class="prop" title="Füllfarbe bzw. Texthintergrund" data-prop="fill">
+      <label class="prop" style="padding:0"><input type="checkbox" id="pFillOn"><span id="pFillLabel">Füllung</span></label>
+      <input type="color" id="pFill" value="#fff3b0" aria-label="Füllfarbe">
+    </span>
+    <span class="sep" data-prop="arrange"></span>
+    <span class="prop pgroup" data-prop="arrange" role="group" aria-label="Ausrichten">
+      <button type="button" class="pbtn" data-arr="left" title="Links ausrichten (bei einem Element: an der Seite)" aria-label="Links ausrichten"><svg class="i" viewBox="0 0 24 24"><path d="M4 3v18M8 7h10v4H8zM8 13h6v4H8z"/></svg></button>
+      <button type="button" class="pbtn" data-arr="hcenter" title="Horizontal zentrieren" aria-label="Horizontal zentrieren"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v18M6 7h12v4H6zM8 13h8v4H8z"/></svg></button>
+      <button type="button" class="pbtn" data-arr="right" title="Rechts ausrichten" aria-label="Rechts ausrichten"><svg class="i" viewBox="0 0 24 24"><path d="M20 3v18M6 7h10v4H6zM10 13h6v4h-6z"/></svg></button>
+      <button type="button" class="pbtn" data-arr="top" title="Oben ausrichten" aria-label="Oben ausrichten"><svg class="i" viewBox="0 0 24 24"><path d="M3 4h18M7 8h4v10H7zM13 8h4v6h-4z"/></svg></button>
+      <button type="button" class="pbtn" data-arr="vcenter" title="Vertikal zentrieren" aria-label="Vertikal zentrieren"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h18M7 6h4v12H7zM13 8h4v8h-4z"/></svg></button>
+      <button type="button" class="pbtn" data-arr="bottom" title="Unten ausrichten" aria-label="Unten ausrichten"><svg class="i" viewBox="0 0 24 24"><path d="M3 20h18M7 6h4v10H7zM13 10h4v6h-4z"/></svg></button>
+    </span>
+  </div>
 
   <div class="main">
     <aside class="thumbs" id="thumbs" aria-label="Seitenübersicht"></aside>
@@ -201,6 +300,13 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
       <div id="pages"></div>
       <div class="loading" id="loading">Dokument wird geladen …</div>
     </section>
+    <div class="searchbar" id="searchbar" role="search" hidden>
+      <input type="search" id="searchInput" placeholder="Im Dokument suchen" aria-label="Suchbegriff" autocomplete="off">
+      <span class="cnt" id="searchCount" aria-live="polite"></span>
+      <button class="btn icon" id="searchPrev" title="Vorheriger Treffer (Umschalt+Enter)" aria-label="Vorheriger Treffer"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+      <button class="btn icon" id="searchNext" title="Nächster Treffer (Enter)" aria-label="Nächster Treffer"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="btn icon" id="searchClose" title="Schließen (Esc)" aria-label="Suche schließen">✕</button>
+    </div>
   </div>
 
   <footer class="status">
@@ -211,6 +317,7 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
       <button class="btn" id="btnBlank" title="Leere Seite nach der aktuellen einfügen"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg><span class="hide-sm">Leere Seite</span></button>
       <button class="btn" id="btnDup" title="Aktuelle Seite duplizieren"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2h2"/></svg><span class="hide-sm">Duplizieren</span></button>
       <button class="btn" id="btnDelPage" title="Aktuelle Seite löschen"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span class="hide-sm">Seite löschen</span></button>
+      <button class="btn" id="btnExtract" title="Seiten extrahieren oder Dokument aufteilen"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h5"/><path d="M14 3v6h6v3M15 16h6M18 13l3 3-3 3"/></svg><span class="hide-sm">Extrahieren</span></button>
     </span>
     <span class="hint" id="hint"></span>
   </footer>
@@ -220,16 +327,47 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
     <h2 id="sigTitle">Unterschrift</h2>
     <p>Mit Maus, Stift oder Finger auf der Linie unterschreiben. Danach auf die Seite klicken, um sie zu platzieren.</p>
+    <div id="sigSavedWrap" hidden>
+      <div class="muted" style="margin-bottom:6px">Gespeicherte Unterschriften (anklicken zum Einfügen)</div>
+      <div class="siglist" id="sigSaved"></div>
+    </div>
     <div class="sigpad" id="sigpad"><canvas id="sigCanvas"></canvas><div class="sigline"></div></div>
     <div class="row">
       <label class="prop">Farbe
         <select id="sigColor"><option value="#1b2a6b">Blau</option><option value="#111111">Schwarz</option></select>
       </label>
+      <label class="prop"><input type="checkbox" id="sigRemember" checked> In diesem Browser merken</label>
       <span class="spacer"></span>
       <button class="btn" id="sigClear">Leeren</button>
       <button class="btn" id="sigCancel">Abbrechen</button>
       <button class="btn primary" id="sigOk">Übernehmen</button>
     </div>
+  </div>
+</div>
+
+<div class="modal" id="extractModal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+    <h2 id="exTitle">Seiten extrahieren</h2>
+    <p>Seitenzahlen oder Bereiche durch Komma trennen, z. B. <kbd>1-3, 5, 8-</kbd>. Anmerkungen und Formularwerte werden mit übernommen.</p>
+    <input type="text" id="exRange" aria-label="Seiten" autocomplete="off">
+    <div class="muted" id="exInfo"></div>
+    <label class="opt"><input type="radio" name="exMode" value="one" checked> Alles in eine neue PDF</label>
+    <label class="opt"><input type="radio" name="exMode" value="groups"> Eine PDF je Bereich (z. B. „1-3, 4-6“ ergibt zwei Dateien)</label>
+    <label class="opt"><input type="radio" name="exMode" value="each"> Jede Seite als eigene PDF</label>
+    <div class="row">
+      <span class="spacer"></span>
+      <button class="btn" id="exCancel">Abbrechen</button>
+      <button class="btn primary" id="exOk">Extrahieren</button>
+    </div>
+  </div>
+</div>
+
+<div class="notepop" id="notePop" role="dialog" aria-label="Notiz" hidden>
+  <textarea id="noteText" placeholder="Kommentar schreiben …" aria-label="Notiztext"></textarea>
+  <div class="row">
+    <button class="btn" id="noteDel">Löschen</button>
+    <span class="spacer"></span>
+    <button class="btn primary" id="noteOk">Fertig</button>
   </div>
 </div>
 
@@ -244,6 +382,7 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
 <input type="file" id="fileAppend" accept="application/pdf,.pdf" hidden>
 <input type="file" id="fileImage" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
 <div class="toast" id="toast" hidden></div>
+<div id="printArea" aria-hidden="true"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
@@ -251,7 +390,8 @@ kbd { font-family: var(--f-ui); font-size: 11px; padding: 1px 5px; border: 1px s
 <script>
 (() => {
 'use strict';
-const { PDFDocument, rgb, degrees, StandardFonts, LineCapStyle, BlendMode } = PDFLib;
+const { PDFDocument, rgb, degrees, StandardFonts, LineCapStyle, BlendMode, PDFName, PDFDict, PDFHexString, PDFString, PDFObjectCopier,
+  PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, PDFOptionList } = PDFLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const $ = id => document.getElementById(id);
@@ -261,9 +401,15 @@ const SWATCHES = ['#d0342c', '#1b2a6b', '#111111', '#1f7a3a', '#f2c200', '#e2711
 const S = {
   sources: [], pages: [], images: {},
   tool: 'select', scale: 1, fileName: 'Beispiel.pdf',
-  props: { color: '#d0342c', size: 16, width: 2.5 },
-  selected: null, current: null, editing: null, pending: null,
+  props: { color: '#d0342c', size: 16, width: 2.5, font: 'helv', bold: false, italic: false, align: 'left', fill: null },
+  selected: null,   // { pageId, ids: [annId, …] } — selection is limited to one page
+  current: null, editing: null, pending: null,
+  form: new Map(),  // "src|fieldName" -> value the user entered
   undo: [], redo: []
+};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('blattwerk.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('blattwerk.' + k, JSON.stringify(v)); return true; } catch { return false; } }
 };
 let nid = 0;
 const uid = () => 'x' + (++nid).toString(36) + Math.random().toString(36).slice(2, 6);
@@ -281,7 +427,12 @@ function toast(msg, ms = 2600) {
 
 /* ---------- text measuring ---------- */
 const mctx = document.createElement('canvas').getContext('2d');
-function measure(text, size) { mctx.font = `${size}px Helvetica, Arial, sans-serif`; return mctx.measureText(text).width; }
+const FONT_CSS = { helv: 'Helvetica, Arial, sans-serif', times: '"Times New Roman", Times, serif', cour: '"Courier New", Courier, monospace' };
+const fontCss = a => FONT_CSS[(a && a.font) || 'helv'] || FONT_CSS.helv;
+function measure(text, size, a) {
+  mctx.font = `${a && a.italic ? 'italic ' : ''}${a && a.bold ? 'bold ' : ''}${size}px ${fontCss(a)}`;
+  return mctx.measureText(text).width;
+}
 
 /* ---------- history ---------- */
 function snapshot() { return JSON.stringify(S.pages); }
@@ -315,7 +466,8 @@ async function openBytes(bytes, name, append) {
       toast(`${pages.length} Seite${pages.length === 1 ? '' : 'n'} angehängt`);
       scrollToPage(pages[0].id);
     } else {
-      S.pages = pages; S.undo = []; S.redo = []; S.selected = null; S.editing = null;
+      S.pages = pages; S.undo = []; S.redo = []; S.selected = null; S.editing = null; S.form = new Map();
+      closeSearch(); closeNote(false);
       S.fileName = name || 'Dokument.pdf'; $('docname').textContent = S.fileName;
       viewer.scrollTop = 0;
       fitWidth(true);
@@ -343,7 +495,7 @@ const visible = new Set();
 const io = new IntersectionObserver(entries => {
   for (const en of entries) {
     const id = en.target.dataset.id;
-    if (en.isIntersecting) { visible.add(id); const p = pageById(id); if (p) { renderCanvas(p, en.target); buildTextLayer(p, en.target); } }
+    if (en.isIntersecting) { visible.add(id); const p = pageById(id); if (p) { renderCanvas(p, en.target); buildTextLayer(p, en.target); buildFormLayer(p, en.target); } }
     else visible.delete(id);
   }
 }, { root: viewer, rootMargin: '800px 0px' });
@@ -376,6 +528,7 @@ async function buildTextLayer(p, wrap) {
 function layout() {
   io.disconnect(); visible.clear();
   pagesEl.textContent = '';
+  pagesEl.style.setProperty('--s', S.scale);
   S.pages.forEach((p, i) => {
     const wrap = document.createElement('div');
     wrap.className = 'page-wrap'; wrap.dataset.id = p.id;
@@ -388,6 +541,8 @@ function layout() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'ov'); svg.setAttribute('viewBox', `0 0 ${p.w} ${p.h}`);
     inner.appendChild(svg);
+    const fl = document.createElement('div'); fl.className = 'formLayer';
+    inner.appendChild(fl);
     wrap.appendChild(inner);
     const lab = document.createElement('div'); lab.className = 'page-label'; lab.textContent = `${i + 1} / ${S.pages.length}`;
     wrap.appendChild(lab);
@@ -420,7 +575,8 @@ async function renderCanvas(p, wrap) {
     const c = document.createElement('canvas');
     c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
     const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    // form widgets are drawn as live HTML inputs on top, so leave them out of the canvas
+    await page.render({ canvasContext: ctx, viewport: vp, annotationMode: pdfjsLib.AnnotationMode.ENABLE_FORMS }).promise;
     canvasCache.set(key, { canvas: c, scale: want });
   })();
   pending.set(tag, job);
@@ -437,28 +593,60 @@ async function renderCanvas(p, wrap) {
 }
 
 /* ---------- annotations: SVG ---------- */
+const NOTE = 22;            // sticky-note icon size in pt
+const TEXT_PAD = 2;         // padding of a text background in pt
+function textLines(a) {
+  const lines = a.text.split('\n');
+  const widths = lines.map(l => measure(l, a.size, a));
+  return { lines, widths, w: Math.max(a.size * 0.6, ...widths), h: lines.length * a.size * 1.2 };
+}
+function arrowGeom(a) {
+  const dx = a.x2 - a.x1, dy = a.y2 - a.y1, len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const hs = Math.min(len * 0.6, Math.max(7, a.width * 3.2));
+  const bx = a.x2 - ux * hs, by = a.y2 - uy * hs, hw = hs * 0.5;
+  return { hs, head: [[a.x2, a.y2], [bx - uy * hw, by + ux * hw], [bx + uy * hw, by - ux * hw]], lx: a.x2 - ux * hs * 0.7, ly: a.y2 - uy * hs * 0.7 };
+}
 function annBox(a) {
-  if (a.type === 'text') {
-    const lines = a.text.split('\n');
-    return { x: a.x, y: a.y, w: Math.max(a.size * 0.6, ...lines.map(l => measure(l, a.size))), h: lines.length * a.size * 1.2 };
-  }
+  if (a.type === 'text') { const t = textLines(a); return { x: a.x, y: a.y, w: t.w, h: t.h }; }
   if (a.type === 'ink') {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const [x, y] of a.points) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
     const pd = a.width / 2 + 2;
     return { x: x0 - pd, y: y0 - pd, w: x1 - x0 + pd * 2, h: y1 - y0 + pd * 2 };
   }
+  if (a.type === 'line' || a.type === 'arrow') {
+    const pd = (a.type === 'arrow' ? arrowGeom(a).hs * 0.5 : 0) + a.width / 2 + 2;
+    const x0 = Math.min(a.x1, a.x2), y0 = Math.min(a.y1, a.y2);
+    return { x: x0 - pd, y: y0 - pd, w: Math.abs(a.x2 - a.x1) + pd * 2, h: Math.abs(a.y2 - a.y1) + pd * 2 };
+  }
+  if (a.type === 'note') return { x: a.x, y: a.y, w: NOTE, h: NOTE };
   return { x: a.x, y: a.y, w: a.w, h: a.h };
 }
+function moveAnn(a, o, dx, dy) {
+  if (a.type === 'ink') a.points = o.points.map(([x, y]) => [r1(x + dx), r1(y + dy)]);
+  else if (a.type === 'line' || a.type === 'arrow') { a.x1 = r1(o.x1 + dx); a.y1 = r1(o.y1 + dy); a.x2 = r1(o.x2 + dx); a.y2 = r1(o.y2 + dy); }
+  else { a.x = r1(o.x + dx); a.y = r1(o.y + dy); }
+}
 const inkPath = pts => pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+const fillAttr = a => a.fill ? a.fill : 'transparent';
 
-function annSVG(a, selected) {
+function annSVG(a, selected, single) {
   const u = 1 / S.scale;
   let body = '';
   switch (a.type) {
     case 'highlight': body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${a.color}" fill-opacity="0.38" style="mix-blend-mode:multiply"/>`; break;
     case 'whiteout': body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="#ffffff"/>`; break;
-    case 'rect': body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="transparent" stroke="${a.color}" stroke-width="${a.width}"/>`; break;
+    case 'rect': body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${fillAttr(a)}" stroke="${a.color}" stroke-width="${a.width}"/>`; break;
+    case 'ellipse': body = `<ellipse cx="${a.x + a.w / 2}" cy="${a.y + a.h / 2}" rx="${a.w / 2}" ry="${a.h / 2}" fill="${fillAttr(a)}" stroke="${a.color}" stroke-width="${a.width}"/>`; break;
+    case 'line': case 'arrow': {
+      const g = a.type === 'arrow' ? arrowGeom(a) : null;
+      const ex = g ? g.lx : a.x2, ey = g ? g.ly : a.y2;
+      body = `<line x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="transparent" stroke-width="${Math.max(a.width, 10 * u)}"/>` +
+             `<line x1="${a.x1}" y1="${a.y1}" x2="${ex}" y2="${ey}" stroke="${a.color}" stroke-width="${a.width}" stroke-linecap="${g ? 'butt' : 'round'}" pointer-events="none"/>` +
+             (g ? `<polygon points="${g.head.map(p => p.join(',')).join(' ')}" fill="${a.color}" pointer-events="none"/>` : '');
+      break;
+    }
     case 'ink': {
       const d = inkPath(a.points);
       body = `<path d="${d}" fill="none" stroke="transparent" stroke-width="${Math.max(a.width, 10 * u)}" stroke-linecap="round"/>` +
@@ -466,13 +654,24 @@ function annSVG(a, selected) {
       break;
     }
     case 'image': body = `<image href="${S.images[a.img] ? S.images[a.img].url : ''}" x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" preserveAspectRatio="none"/>`; break;
+    case 'note': {
+      const n = NOTE, x = a.x, y = a.y;
+      body = `<title>${esc(a.text || 'Notiz')}</title>` +
+        `<path d="M${x} ${y + 2}q0-2 2-2h${n - 4}q2 0 2 2v${n - 9}l-7 7h-${n - 7}q-2 0-2-2z" fill="${a.color}" stroke="rgba(0,0,0,.45)" stroke-width="0.8"/>` +
+        `<path d="M${x + n} ${y + n - 7}h-5q-2 0-2 2v5" fill="rgba(0,0,0,.18)" stroke="rgba(0,0,0,.45)" stroke-width="0.8"/>` +
+        `<path d="M${x + 5} ${y + 7}h${n - 10}M${x + 5} ${y + 11}h${n - 10}M${x + 5} ${y + 15}h${n - 14}" stroke="rgba(0,0,0,.55)" stroke-width="1.1" pointer-events="none"/>`;
+      break;
+    }
     case 'text': {
       if (S.editing && S.editing.ann.id === a.id) return '';
-      const b = annBox(a);
-      const tsp = a.text.split('\n').map((l, i) =>
-        `<tspan x="${a.x}" y="${r1(a.y + a.size * 0.8 + i * a.size * 1.2)}">${esc(l) || ' '}</tspan>`).join('');
-      body = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="transparent"/>` +
-             `<text font-family="Helvetica, Arial, sans-serif" font-size="${a.size}" fill="${a.color}" style="white-space:pre">${tsp}</text>`;
+      const t = textLines(a);
+      const anchor = a.align === 'center' ? 'middle' : a.align === 'right' ? 'end' : 'start';
+      const ax = a.x + (a.align === 'center' ? t.w / 2 : a.align === 'right' ? t.w : 0);
+      const tsp = t.lines.map((l, i) =>
+        `<tspan x="${r1(ax)}" y="${r1(a.y + a.size * 0.8 + i * a.size * 1.2)}">${esc(l) || ' '}</tspan>`).join('');
+      body = (a.fill ? `<rect x="${a.x - TEXT_PAD}" y="${a.y - TEXT_PAD}" width="${t.w + TEXT_PAD * 2}" height="${t.h + TEXT_PAD * 2}" fill="${a.fill}"/>`
+                     : `<rect x="${a.x}" y="${a.y}" width="${t.w}" height="${t.h}" fill="transparent"/>`) +
+             `<text font-family='${fontCss(a)}' font-size="${a.size}" font-weight="${a.bold ? 'bold' : 'normal'}" font-style="${a.italic ? 'italic' : 'normal'}" text-anchor="${anchor}" fill="${a.color}" style="white-space:pre">${tsp}</text>`;
       break;
     }
   }
@@ -480,8 +679,11 @@ function annSVG(a, selected) {
   if (selected) {
     const b = annBox(a), pd = 3 * u;
     sel = `<rect class="sel" x="${b.x - pd}" y="${b.y - pd}" width="${b.w + pd * 2}" height="${b.h + pd * 2}" stroke-width="${1.2 * u}"/>`;
-    if (/^(rect|highlight|whiteout|image)$/.test(a.type))
+    if (single && /^(rect|ellipse|highlight|whiteout|image)$/.test(a.type))
       sel += `<circle class="handle" data-handle="1" cx="${a.x + a.w}" cy="${a.y + a.h}" r="${6 * u}" stroke-width="${1.5 * u}"/>`;
+    if (single && (a.type === 'line' || a.type === 'arrow'))
+      sel += `<circle class="handle" data-handle="1" cx="${a.x1}" cy="${a.y1}" r="${6 * u}" stroke-width="${1.5 * u}" style="cursor:move"/>` +
+             `<circle class="handle" data-handle="2" cx="${a.x2}" cy="${a.y2}" r="${6 * u}" stroke-width="${1.5 * u}" style="cursor:move"/>`;
   }
   const tf = a.type === 'text' && a.angle ? ` transform="rotate(${-a.angle} ${a.x} ${a.y})"` : '';
   return `<g class="ann" data-id="${a.id}"${tf}>${body}${sel}</g>`;
@@ -490,11 +692,96 @@ function annSVG(a, selected) {
 function renderAnns(p) {
   const wrap = wrapOf(p.id); if (!wrap) return;
   const svg = wrap.querySelector('svg.ov');
-  const selId = S.selected && S.selected.pageId === p.id ? S.selected.annId : null;
+  const ids = S.selected && S.selected.pageId === p.id ? S.selected.ids : [];
   const keepFo = svg.querySelector('foreignObject');
-  svg.innerHTML = p.anns.map(a => annSVG(a, a.id === selId)).join('') +
-    (S.snap && S.snap.pageId === p.id ? `<rect class="snapsel" x="${S.snap.x}" y="${S.snap.y}" width="${S.snap.w}" height="${S.snap.h}" stroke-width="${1.4 / S.scale}"/>` : '');
+  const u = 1 / S.scale;
+  let hits = '';
+  if (SR.hits.length) SR.hits.forEach((h, i) => {
+    if (h.pageId !== p.id) return;
+    const cur = i === SR.cur;
+    h.rects.forEach(r => { hits += `<rect class="hit${cur ? ' cur' : ''}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" stroke-width="${u}"/>`; });
+  });
+  svg.innerHTML = hits + p.anns.map(a => annSVG(a, ids.includes(a.id), ids.length === 1)).join('') +
+    (S.snap && S.snap.pageId === p.id ? `<rect class="snapsel" x="${S.snap.x}" y="${S.snap.y}" width="${S.snap.w}" height="${S.snap.h}" stroke-width="${1.4 * u}"/>` : '') +
+    (S.marquee && S.marquee.pageId === p.id ? `<rect class="marquee" x="${S.marquee.x}" y="${S.marquee.y}" width="${S.marquee.w}" height="${S.marquee.h}" stroke-width="${u}"/>` : '');
   if (keepFo && S.editing && S.editing.page.id === p.id) svg.appendChild(keepFo);
+}
+
+/* ---------- form fields (AcroForm) ---------- */
+const formCache = new Map();   // pageKey -> Promise<widget[]>
+const formKey = (p, name) => p.src + '|' + name;
+function widgetsFor(p) {
+  const key = pageKey(p);
+  if (!formCache.has(key)) formCache.set(key, S.sources[p.src].doc.getPage(p.idx + 1)
+    .then(pg => pg.getAnnotations({ intent: 'display' }))
+    .then(list => list.filter(a => a.subtype === 'Widget' && a.fieldName && !a.hidden && !a.pushButton && /^(Tx|Btn|Ch)$/.test(a.fieldType)))
+    .catch(e => { console.warn(e); return []; }));
+  return formCache.get(key);
+}
+function initialValue(w) {
+  if (w.fieldType === 'Tx') return w.fieldValue == null ? '' : String(w.fieldValue);
+  if (w.checkBox) return w.fieldValue != null && w.fieldValue !== 'Off' && w.fieldValue === w.exportValue;
+  if (w.radioButton) return w.fieldValue != null && w.fieldValue !== 'Off' ? String(w.fieldValue) : '';
+  if (w.fieldType === 'Ch') { const v = w.fieldValue; return Array.isArray(v) ? v : v == null || v === '' ? [] : [String(v)]; }
+  return '';
+}
+function fieldValue(p, w) { const k = formKey(p, w.fieldName); return S.form.has(k) ? S.form.get(k) : initialValue(w); }
+async function buildFormLayer(p, wrap) {
+  const fl = wrap.querySelector('.formLayer');
+  if (!fl || fl.dataset.done) return;
+  fl.dataset.done = '1';
+  const widgets = await widgetsFor(p);
+  if (!widgets.length || !fl.isConnected) return;
+  const page = await S.sources[p.src].doc.getPage(p.idx + 1);
+  const [vx0, , , vy1] = page.view;
+  for (const w of widgets) {
+    const [x1, y1, x2, y2] = w.rect;
+    const L = Math.min(x1, x2) - vx0, T = vy1 - Math.max(y1, y2), W = Math.abs(x2 - x1), H = Math.abs(y2 - y1);
+    const k = formKey(p, w.fieldName), val = fieldValue(p, w);
+    let el;
+    if (w.fieldType === 'Tx') {
+      el = document.createElement(w.multiLine ? 'textarea' : 'input');
+      if (!w.multiLine) el.type = 'text';
+      el.value = val;
+      if (w.maxLen) el.maxLength = w.maxLen;
+      if (w.textAlignment === 1) el.style.textAlign = 'center'; else if (w.textAlignment === 2) el.style.textAlign = 'right';
+      el.addEventListener('input', () => setFormValue(p, w, el.value, el));
+    } else if (w.checkBox || w.radioButton) {
+      el = document.createElement('input');
+      el.type = w.checkBox ? 'checkbox' : 'radio';
+      if (w.radioButton) { el.name = 'r' + p.id + k; el.checked = val === w.buttonValue; }
+      else el.checked = !!val;
+      el.addEventListener('change', () => setFormValue(p, w, w.checkBox ? el.checked : (el.checked ? w.buttonValue : ''), el));
+    } else {
+      el = document.createElement('select');
+      if (w.multiSelect || !w.combo) { el.multiple = !!w.multiSelect; if (!w.combo) el.size = Math.max(2, Math.round(H / 14)); }
+      if (w.combo && !w.multiSelect) el.add(new Option('', ''));
+      for (const o of w.options || []) el.add(new Option(o.displayValue, o.exportValue));
+      [...el.options].forEach(o => { o.selected = val.includes(o.value); });
+      el.addEventListener('change', () => setFormValue(p, w, [...el.selectedOptions].map(o => o.value).filter(Boolean), el));
+    }
+    el.className = 'ff'; el.dataset.key = k;
+    if (w.radioButton) el.dataset.on = w.buttonValue;
+    el.disabled = !!w.readOnly;
+    el.title = w.alternativeText || w.fieldName;
+    el.setAttribute('aria-label', w.alternativeText || w.fieldName);
+    const fs = w.defaultAppearanceData && w.defaultAppearanceData.fontSize;
+    el.style.setProperty('--fs', fs ? fs : w.fieldType === 'Tx' && !w.multiLine ? Math.max(6, Math.min(14, H * 0.68)) : w.fieldType === 'Btn' ? H * 0.8 : 10);
+    Object.assign(el.style, { left: L / p.w * 100 + '%', top: T / p.h * 100 + '%', width: W / p.w * 100 + '%', height: H / p.h * 100 + '%' });
+    fl.appendChild(el);
+  }
+}
+function setFormValue(p, w, v, from) {
+  const k = formKey(p, w.fieldName);
+  S.form.set(k, v);
+  // the same field can appear several times (also on duplicated pages): keep all copies in sync
+  pagesEl.querySelectorAll('.ff').forEach(el => {
+    if (el === from || el.dataset.key !== k) return;
+    if (el.type === 'checkbox') el.checked = !!v;
+    else if (el.type === 'radio') el.checked = v === el.dataset.on;
+    else if (el.tagName === 'SELECT') [...el.options].forEach(o => { o.selected = v.includes(o.value); });
+    else el.value = v;
+  });
 }
 
 /* ---------- thumbnails ---------- */
@@ -582,6 +869,7 @@ function setScale(s, keepAnchor = true) {
   s = Math.max(0.25, Math.min(4, s));
   const ratioY = viewer.scrollTop / Math.max(1, viewer.scrollHeight);
   S.scale = s;
+  pagesEl.style.setProperty('--s', s);
   $('zoomval').textContent = Math.round(s * 100) + ' %';
   pagesEl.querySelectorAll('.page-wrap').forEach(w => { const p = pageById(w.dataset.id); setSizes(w, p); renderAnns(p); });
   if (keepAnchor) viewer.scrollTop = ratioY * viewer.scrollHeight;
@@ -605,18 +893,35 @@ function zoomStep(dir) {
 
 /* ---------- tools ---------- */
 const HINTS = {
-  select: 'Element anklicken zum Auswählen, ziehen zum Verschieben. Doppelklick auf Text bearbeitet ihn. Strg+C / Strg+V kopiert Elemente, Strg+V fügt auch Bilder und Text aus der Zwischenablage ein.',
+  select: 'Klicken wählt aus, Umschalt+Klick oder Rahmen ziehen wählt mehrere. Pfeiltasten verschieben (mit Umschalt in 10er-Schritten), Strg+A wählt alles auf der Seite. Doppelklick bearbeitet Text und Notizen. Formularfelder hier direkt ausfüllen.',
   textsel: 'Text in der PDF mit der Maus markieren und mit Strg+C kopieren.',
   snap: 'Rahmen um einen Bereich ziehen. Er wird als Bild kopiert und kann gespeichert oder wieder eingefügt werden.',
-  text: 'Auf die Seite klicken und tippen. Tipp: Erst mit „Abdecken“ alten Text überdecken, dann neu schreiben.',
+  text: 'Auf die Seite klicken und tippen. Schrift, Ausrichtung und Hintergrund oben wählen. Tipp: Erst mit „Abdecken“ alten Text überdecken, dann neu schreiben.',
   ink: 'Mit gedrückter Maustaste auf der Seite zeichnen.',
   highlight: 'Rechteck über die Textstelle ziehen, um sie zu markieren.',
-  rect: 'Rechteck aufziehen.',
+  rect: 'Rechteck aufziehen. Mit Umschalt wird es quadratisch.',
+  ellipse: 'Ellipse aufziehen. Mit Umschalt wird sie kreisrund.',
+  line: 'Linie ziehen. Mit Umschalt rastet sie in 45°-Schritten ein.',
+  arrow: 'Pfeil von Anfang zur Spitze ziehen. Mit Umschalt rastet er in 45°-Schritten ein.',
+  note: 'Auf die Seite klicken, um eine Notiz anzuheften. Sie wird als echter PDF-Kommentar gespeichert und ist z. B. in Acrobat sichtbar.',
   whiteout: 'Bereich aufziehen, der weiß überdeckt werden soll. Der Inhalt darunter bleibt in der Datei erhalten.',
   place: 'Auf die Seite klicken, um das Bild zu platzieren. Esc bricht ab.'
 };
+const TOOL_PROPS = {
+  text: ['color', 'font', 'size', 'style', 'align', 'fill'], ink: ['color', 'width'], highlight: ['color'],
+  rect: ['color', 'width', 'fill'], ellipse: ['color', 'width', 'fill'], line: ['color', 'width'], arrow: ['color', 'width'], note: ['color']
+};
+// which annotation types a property applies to
+const PROP_TYPES = {
+  color: ['text', 'ink', 'highlight', 'rect', 'ellipse', 'line', 'arrow', 'note'],
+  size: ['text'], font: ['text'], bold: ['text'], italic: ['text'], align: ['text'],
+  width: ['ink', 'rect', 'ellipse', 'line', 'arrow'], fill: ['rect', 'ellipse', 'text']
+};
+const PROP_UI = { color: 'color', size: 'size', font: 'font', bold: 'style', italic: 'style', align: 'align', width: 'width', fill: 'fill' };
+
 function setTool(t) {
   if (S.editing) commitEdit();
+  closeNote(true);
   S.tool = t;
   if (t !== 'place') S.pending = null;
   if (t !== 'textsel') { const sel = window.getSelection(); if (sel && !sel.isCollapsed && sel.anchorNode && pagesEl.contains(sel.anchorNode)) sel.removeAllRanges(); }
@@ -629,53 +934,141 @@ function setTool(t) {
 }
 document.querySelectorAll('.tool[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
-function selectedAnn() {
+/* selection: always on a single page, may hold several elements */
+function selList() {
   if (!S.selected) return null;
   const p = pageById(S.selected.pageId); if (!p) return null;
-  const a = p.anns.find(x => x.id === S.selected.annId);
-  return a ? { p, a } : null;
+  const list = p.anns.filter(x => S.selected.ids.includes(x.id));
+  return list.length ? { p, list } : null;
 }
-function select(p, a) {
+function setSelection(p, ids) {
   const prev = S.selected && pageById(S.selected.pageId);
-  S.selected = a ? { pageId: p.id, annId: a.id } : null;
+  S.selected = p && ids.length ? { pageId: p.id, ids: [...new Set(ids)] } : null;
   if (prev && prev !== p) renderAnns(prev);
   if (p) renderAnns(p);
-  if (a) syncProps(a);
+  const s = selList();
+  if (s) syncProps(s.list[0]);
   updateUI();
 }
+function select(p, a) { setSelection(p, a ? [a.id] : []); }
+function toggleSelect(p, a) {
+  const cur = S.selected && S.selected.pageId === p.id ? S.selected.ids : [];
+  setSelection(p, cur.includes(a.id) ? cur.filter(x => x !== a.id) : [...cur, a.id]);
+}
+function isSelected(p, a) { return !!(S.selected && S.selected.pageId === p.id && S.selected.ids.includes(a.id)); }
 function syncProps(a) {
   if (a.color) { $('pColor').value = a.color; S.props.color = a.color; }
-  if (a.type === 'text') { $('pSize').value = String(a.size); if ($('pSize').value !== String(a.size)) { const o = new Option(a.size); $('pSize').add(o); $('pSize').value = String(a.size); } S.props.size = a.size; }
+  if (a.type === 'text') {
+    $('pSize').value = String(a.size);
+    if ($('pSize').value !== String(a.size)) { $('pSize').add(new Option(a.size)); $('pSize').value = String(a.size); }
+    S.props.size = a.size;
+    S.props.font = a.font || 'helv'; S.props.bold = !!a.bold; S.props.italic = !!a.italic; S.props.align = a.align || 'left';
+  }
   if (a.width) { $('pWidth').value = a.width; S.props.width = a.width; }
+  if (PROP_TYPES.fill.includes(a.type)) { S.props.fill = a.fill || null; if (a.fill) $('pFill').value = a.fill; }
+  syncPropControls();
+}
+function syncPropControls() {
+  $('pFont').value = S.props.font;
+  $('pBold').setAttribute('aria-pressed', String(S.props.bold));
+  $('pItalic').setAttribute('aria-pressed', String(S.props.italic));
+  document.querySelectorAll('[data-align]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.align === S.props.align)));
+  $('pFillOn').checked = !!S.props.fill;
+}
+function refreshProps() {
+  let show = [];
+  const s = S.tool === 'select' && !S.editing && selList();
+  if (S.editing) { show = TOOL_PROPS.text; $('pFillLabel').textContent = 'Hintergrund'; }
+  else if (s) {
+    const types = new Set(s.list.map(a => a.type));
+    for (const [k, ts] of Object.entries(PROP_TYPES)) if (ts.some(t => types.has(t))) show.push(PROP_UI[k]);
+    show.push('arrange');
+    $('pFillLabel').textContent = types.has('text') && !types.has('rect') && !types.has('ellipse') ? 'Hintergrund' : 'Füllung';
+  } else {
+    show = TOOL_PROPS[S.tool] || [];
+    $('pFillLabel').textContent = S.tool === 'text' ? 'Hintergrund' : 'Füllung';
+  }
+  document.querySelectorAll('[data-prop]').forEach(el => {
+    const k = el.dataset.prop;
+    el.hidden = k === 'empty' ? show.length > 0 : k === 'any' ? !show.some(x => x !== 'arrange') : !show.includes(k);
+  });
 }
 function deleteSelected() {
-  const s = selectedAnn(); if (!s) return;
+  const s = selList(); if (!s) return;
   pushHistory();
-  s.p.anns = s.p.anns.filter(x => x !== s.a);
+  s.p.anns = s.p.anns.filter(x => !s.list.includes(x));
   S.selected = null; renderAnns(s.p); updateUI();
 }
 
 /* property controls */
 const swEl = $('swatches');
-SWATCHES.forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.background = c; b.title = c; b.setAttribute('aria-label', 'Farbe ' + c); b.addEventListener('click', e => { e.preventDefault(); applyProp('color', c); $('pColor').value = c; }); swEl.appendChild(b); });
+SWATCHES.forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.background = c; b.title = c; b.setAttribute('aria-label', 'Farbe ' + c); b.addEventListener('click', e => { e.preventDefault(); applyProp('color', c); $('pColor').value = c; propPushed = false; }); swEl.appendChild(b); });
 let propPushed = false;
 function applyProp(k, v) {
   S.props[k] = v;
-  const s = selectedAnn();
+  syncPropControls();
+  const s = selList();
   if (!s) return;
-  const a = s.a;
-  if (k === 'color' && a.type === 'whiteout') return;
-  if (k === 'size' && a.type !== 'text') return;
-  if (k === 'width' && !(a.type === 'ink' || a.type === 'rect')) return;
+  const targets = s.list.filter(a => PROP_TYPES[k].includes(a.type));
+  if (!targets.length) return;
   if (!propPushed) { pushHistory(); propPushed = true; }
-  a[k] = v; renderAnns(s.p);
+  targets.forEach(a => { a[k] = v; });
+  renderAnns(s.p);
 }
+const oneShot = (k, v) => { applyProp(k, v); propPushed = false; };
 $('pColor').addEventListener('input', e => applyProp('color', e.target.value));
 $('pColor').addEventListener('change', () => { propPushed = false; });
-$('pSize').addEventListener('change', e => { applyProp('size', +e.target.value); propPushed = false; });
+$('pSize').addEventListener('change', e => oneShot('size', +e.target.value));
+$('pFont').addEventListener('change', e => oneShot('font', e.target.value));
+$('pBold').addEventListener('click', () => oneShot('bold', !S.props.bold));
+$('pItalic').addEventListener('click', () => oneShot('italic', !S.props.italic));
+document.querySelectorAll('[data-align]').forEach(b => b.addEventListener('click', () => oneShot('align', b.dataset.align)));
 $('pWidth').addEventListener('input', e => applyProp('width', +e.target.value));
 $('pWidth').addEventListener('change', () => { propPushed = false; });
-swEl.addEventListener('click', () => { propPushed = false; });
+$('pFillOn').addEventListener('change', e => oneShot('fill', e.target.checked ? $('pFill').value : null));
+$('pFill').addEventListener('input', e => { $('pFillOn').checked = true; applyProp('fill', e.target.value); });
+$('pFill').addEventListener('change', () => { propPushed = false; });
+// keep the edit box in sync when text properties change while typing
+['pSize', 'pFont', 'pBold', 'pItalic'].forEach(id => $(id).addEventListener(id.startsWith('pB') || id.startsWith('pI') ? 'click' : 'change', () => {
+  if (!S.editing) return;
+  const a = S.editing.ann;
+  Object.assign(a, { size: S.props.size, font: S.props.font, bold: S.props.bold, italic: S.props.italic });
+  styleEditBox(a);
+}));
+document.querySelectorAll('[data-align]').forEach(b => b.addEventListener('click', () => { if (S.editing) { S.editing.ann.align = S.props.align; styleEditBox(S.editing.ann); } }));
+$('pColor').addEventListener('input', () => { if (S.editing) { S.editing.ann.color = S.props.color; styleEditBox(S.editing.ann); } });
+$('pFillOn').addEventListener('change', () => { if (S.editing) { S.editing.ann.fill = S.props.fill; styleEditBox(S.editing.ann); } });
+
+/* arrange: align selected elements to each other, or a single one to the page */
+function arrange(how) {
+  const s = selList(); if (!s) return;
+  const boxes = s.list.map(annBox);
+  const ref = s.list.length === 1 ? { x: 0, y: 0, w: s.p.w, h: s.p.h } : (() => {
+    const x0 = Math.min(...boxes.map(b => b.x)), y0 = Math.min(...boxes.map(b => b.y));
+    return { x: x0, y: y0, w: Math.max(...boxes.map(b => b.x + b.w)) - x0, h: Math.max(...boxes.map(b => b.y + b.h)) - y0 };
+  })();
+  pushHistory();
+  s.list.forEach((a, i) => {
+    const b = boxes[i]; let dx = 0, dy = 0;
+    if (how === 'left') dx = ref.x - b.x;
+    if (how === 'right') dx = ref.x + ref.w - (b.x + b.w);
+    if (how === 'hcenter') dx = ref.x + ref.w / 2 - (b.x + b.w / 2);
+    if (how === 'top') dy = ref.y - b.y;
+    if (how === 'bottom') dy = ref.y + ref.h - (b.y + b.h);
+    if (how === 'vcenter') dy = ref.y + ref.h / 2 - (b.y + b.h / 2);
+    moveAnn(a, JSON.parse(JSON.stringify(a)), dx, dy);
+  });
+  renderAnns(s.p);
+}
+document.querySelectorAll('[data-arr]').forEach(b => b.addEventListener('click', () => arrange(b.dataset.arr)));
+let nudgeT = 0;
+function nudge(dx, dy) {
+  const s = selList(); if (!s) return;
+  if (Date.now() - nudgeT > 700) pushHistory();
+  nudgeT = Date.now();
+  s.list.forEach(a => moveAnn(a, JSON.parse(JSON.stringify(a)), dx, dy));
+  renderAnns(s.p);
+}
 
 /* ---------- pointer interaction on pages ---------- */
 function toPage(svg, e) {
@@ -683,44 +1076,85 @@ function toPage(svg, e) {
   const m = svg.getScreenCTM(); const r = pt.matrixTransform(m.inverse());
   return { x: r1(r.x), y: r1(r.y) };
 }
-let drag = null;
+const clone = o => JSON.parse(JSON.stringify(o));
+function snap45(from, pt) {
+  const dx = pt.x - from.x, dy = pt.y - from.y, len = Math.hypot(dx, dy);
+  const ang = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+  return { x: r1(from.x + Math.cos(ang) * len), y: r1(from.y + Math.sin(ang) * len) };
+}
+let drag = null, lastHit = null;
 pagesEl.addEventListener('pointerdown', e => {
   const svg = e.target.closest('svg.ov'); if (!svg || e.button !== 0) return;
   if (e.target.closest('foreignObject')) return;
   const wrap = svg.closest('.page-wrap'); const p = pageById(wrap.dataset.id);
   S.current = p.id; markCurrent();
   clearSnap();
+  closeNote(true);
   if (S.editing) { const wasText = S.tool === 'text'; commitEdit(); if (wasText) { e.preventDefault(); return; } }
   const pt = toPage(svg, e);
   const t = S.tool;
 
   if (t === 'select') {
-    const g = e.target.closest('[data-id]');
-    if (!g) { select(p, null); return; }
-    const a = p.anns.find(x => x.id === g.dataset.id); if (!a) return;
-    const resize = !!e.target.dataset.handle;
-    select(p, a);
-    drag = { mode: resize ? 'resize' : 'move', svg, p, a, start: pt, orig: JSON.parse(JSON.stringify(a)), pushed: false };
+    const g = e.target.closest('g.ann');
+    if (!g) {
+      if (!e.shiftKey) select(p, null);
+      if (e.pointerType !== 'touch') {
+        S.marquee = { pageId: p.id, x: pt.x, y: pt.y, w: 0, h: 0 };
+        drag = { mode: 'marquee', svg, p, start: pt, add: e.shiftKey ? (S.selected && S.selected.pageId === p.id ? S.selected.ids : []) : [] };
+      }
+    } else {
+      const a = p.anns.find(x => x.id === g.dataset.id); if (!a) return;
+      // detect double clicks here: re-rendering the selection removes the pressed node, so browsers drop click/dblclick
+      if (lastHit && lastHit.a === a && Date.now() - lastHit.t < 450 && Math.hypot(e.clientX - lastHit.x, e.clientY - lastHit.y) < 8 && (a.type === 'text' || a.type === 'note')) {
+        lastHit = null; e.preventDefault();
+        if (a.type === 'text') startEdit(p, a, false); else openNote(p, a, false);
+        return;
+      }
+      lastHit = { a, t: Date.now(), x: e.clientX, y: e.clientY };
+      if (e.shiftKey || e.ctrlKey || e.metaKey) { toggleSelect(p, a); return; }
+      const handle = e.target.dataset.handle;
+      if (!isSelected(p, a) || handle) select(p, a);
+      const s = selList();
+      drag = { mode: handle ? 'resize' : 'move', handle, svg, p, a, start: pt, origs: new Map(s.list.map(x => [x.id, clone(x)])), list: s.list, pushed: false };
+    }
   } else if (t === 'text') {
-    const g = e.target.closest('[data-id]');
+    const g = e.target.closest('g.ann');
     const hit = g && p.anns.find(x => x.id === g.dataset.id && x.type === 'text');
     if (hit) { e.preventDefault(); startEdit(p, hit, false); return; }
     pushHistory();
-    const a = { id: uid(), type: 'text', x: pt.x, y: r1(pt.y - S.props.size * 0.6), text: '', size: S.props.size, color: S.props.color, angle: p.rotation };
+    const P = S.props;
+    const a = { id: uid(), type: 'text', x: pt.x, y: r1(pt.y - P.size * 0.6), text: '', size: P.size, color: P.color, angle: p.rotation,
+      font: P.font, bold: P.bold, italic: P.italic, align: P.align, fill: P.fill };
     p.anns.push(a);
     e.preventDefault();
     startEdit(p, a, true);
+    return;
+  } else if (t === 'note') {
+    const g = e.target.closest('g.ann');
+    const hit = g && p.anns.find(x => x.id === g.dataset.id && x.type === 'note');
+    e.preventDefault();
+    if (hit) { openNote(p, hit, false); return; }
+    pushHistory();
+    const a = { id: uid(), type: 'note', x: r1(Math.min(p.w - NOTE, Math.max(0, pt.x - NOTE / 2))), y: r1(Math.min(p.h - NOTE, Math.max(0, pt.y - NOTE / 2))),
+      text: '', color: S.props.color === '#d0342c' ? '#f2c200' : S.props.color };
+    p.anns.push(a); renderAnns(p);
+    openNote(p, a, true);
     return;
   } else if (t === 'ink') {
     pushHistory();
     const a = { id: uid(), type: 'ink', points: [[pt.x, pt.y]], color: S.props.color, width: S.props.width };
     p.anns.push(a);
     drag = { mode: 'ink', svg, p, a };
-  } else if (t === 'highlight' || t === 'rect' || t === 'whiteout') {
+  } else if (t === 'line' || t === 'arrow') {
+    pushHistory();
+    const a = { id: uid(), type: t, x1: pt.x, y1: pt.y, x2: pt.x, y2: pt.y, color: S.props.color, width: S.props.width };
+    p.anns.push(a);
+    drag = { mode: 'line', svg, p, a, start: pt };
+  } else if (t === 'highlight' || t === 'rect' || t === 'whiteout' || t === 'ellipse') {
     pushHistory();
     const a = { id: uid(), type: t, x: pt.x, y: pt.y, w: 0, h: 0 };
     if (t !== 'whiteout') a.color = t === 'highlight' && S.props.color === '#d0342c' ? '#f2c200' : S.props.color;
-    if (t === 'rect') a.width = S.props.width;
+    if (t === 'rect' || t === 'ellipse') { a.width = S.props.width; if (S.props.fill) a.fill = S.props.fill; }
     p.anns.push(a);
     drag = { mode: 'shape', svg, p, a, start: pt };
   } else if (t === 'snap') {
@@ -741,27 +1175,44 @@ pagesEl.addEventListener('pointerdown', e => {
 pagesEl.addEventListener('pointermove', e => {
   if (!drag) return;
   const pt = toPage(drag.svg, e);
-  const { a, orig } = drag;
+  const { a } = drag;
   if (drag.mode === 'move' || drag.mode === 'resize') {
     const dx = pt.x - drag.start.x, dy = pt.y - drag.start.y;
-    if (!drag.pushed) { if (Math.hypot(dx, dy) < 1.5) return; const cur = JSON.stringify(a); Object.assign(a, orig); pushHistory(); Object.assign(a, JSON.parse(cur)); drag.pushed = true; }
-    if (drag.mode === 'move') {
-      if (a.type === 'ink') a.points = orig.points.map(([x, y]) => [r1(x + dx), r1(y + dy)]);
-      else { a.x = r1(orig.x + dx); a.y = r1(orig.y + dy); }
-    } else {
-      a.w = r1(Math.max(4, orig.w + dx));
-      a.h = a.type === 'image' ? r1(a.w * orig.h / orig.w) : r1(Math.max(4, orig.h + dy));
+    if (!drag.pushed) {
+      if (Math.hypot(dx, dy) < 1.5) return;
+      const cur = drag.list.map(x => JSON.stringify(x));
+      drag.list.forEach(x => Object.assign(x, drag.origs.get(x.id))); pushHistory();
+      drag.list.forEach((x, i) => Object.assign(x, JSON.parse(cur[i])));
+      drag.pushed = true;
+    }
+    if (drag.mode === 'move') drag.list.forEach(x => moveAnn(x, drag.origs.get(x.id), dx, dy));
+    else {
+      const orig = drag.origs.get(a.id);
+      if (a.type === 'line' || a.type === 'arrow') {
+        const n = drag.handle === '1' ? '1' : '2', o = n === '1' ? '2' : '1';
+        const q = e.shiftKey ? snap45({ x: a['x' + o], y: a['y' + o] }, pt) : pt;
+        a['x' + n] = q.x; a['y' + n] = q.y;
+      } else {
+        a.w = r1(Math.max(4, orig.w + dx));
+        a.h = a.type === 'image' || e.shiftKey && a.type !== 'highlight' && a.type !== 'whiteout' ? r1(a.w * orig.h / orig.w) : r1(Math.max(4, orig.h + dy));
+      }
     }
   } else if (drag.mode === 'ink') {
     const last = a.points[a.points.length - 1];
     if (Math.hypot(pt.x - last[0], pt.y - last[1]) > 0.8) a.points.push([pt.x, pt.y]);
-  } else if (drag.mode === 'snap') {
-    const s = S.snap;
+  } else if (drag.mode === 'line') {
+    const q = e.shiftKey ? snap45(drag.start, pt) : pt;
+    a.x2 = q.x; a.y2 = q.y;
+  } else if (drag.mode === 'snap' || drag.mode === 'marquee') {
+    const s = drag.mode === 'snap' ? S.snap : S.marquee;
     s.x = Math.max(0, Math.min(drag.start.x, pt.x)); s.y = Math.max(0, Math.min(drag.start.y, pt.y));
     s.w = r1(Math.min(drag.p.w, Math.max(drag.start.x, pt.x)) - s.x); s.h = r1(Math.min(drag.p.h, Math.max(drag.start.y, pt.y)) - s.y);
   } else if (drag.mode === 'shape') {
-    a.x = Math.min(drag.start.x, pt.x); a.y = Math.min(drag.start.y, pt.y);
-    a.w = r1(Math.abs(pt.x - drag.start.x)); a.h = r1(Math.abs(pt.y - drag.start.y));
+    let w = Math.abs(pt.x - drag.start.x), h = Math.abs(pt.y - drag.start.y);
+    if (e.shiftKey && (a.type === 'rect' || a.type === 'ellipse')) w = h = Math.max(w, h);
+    a.x = pt.x < drag.start.x ? r1(drag.start.x - w) : drag.start.x;
+    a.y = pt.y < drag.start.y ? r1(drag.start.y - h) : drag.start.y;
+    a.w = r1(w); a.h = r1(h);
   }
   renderAnns(drag.p);
 });
@@ -774,25 +1225,64 @@ function endDrag(e) {
     snapFinish(p, e);
     return;
   }
+  if (mode === 'marquee') {
+    const m = S.marquee; S.marquee = null;
+    const add = drag.add; drag = null;
+    if (m.w < 3 && m.h < 3) { renderAnns(p); return; }
+    const inside = p.anns.filter(x => { const b = annBox(x); return b.x < m.x + m.w && b.x + b.w > m.x && b.y < m.y + m.h && b.y + b.h > m.y; });
+    setSelection(p, [...add, ...inside.map(x => x.id)]);
+    return;
+  }
   if (mode === 'ink' && a.points.length < 2) { a.points.push([a.points[0][0] + 0.1, a.points[0][1] + 0.1]); }
   if (mode === 'shape' && (a.w < 3 || a.h < 3)) { p.anns = p.anns.filter(x => x !== a); S.undo.pop(); updateUI(); }
+  if (mode === 'line' && Math.hypot(a.x2 - a.x1, a.y2 - a.y1) < 4) { p.anns = p.anns.filter(x => x !== a); S.undo.pop(); updateUI(); }
   drag = null; renderAnns(p);
 }
 pagesEl.addEventListener('pointerup', endDrag);
 pagesEl.addEventListener('pointercancel', endDrag);
-pagesEl.addEventListener('dblclick', e => {
-  if (S.tool !== 'select') return;
-  const g = e.target.closest('[data-id]'); const w = e.target.closest('.page-wrap'); if (!g || !w) return;
-  const p = pageById(w.dataset.id); const a = p.anns.find(x => x.id === g.dataset.id);
-  if (a && a.type === 'text') startEdit(p, a, false);
+/* ---------- notes (real PDF comment annotations) ---------- */
+let noteEd = null;
+function openNote(p, a, isNew) {
+  closeNote(true);
+  if (!isNew) pushHistory();
+  noteEd = { p, a, isNew, before: a.text };
+  select(p, a);
+  const pop = $('notePop'), ta = $('noteText');
+  ta.value = a.text;
+  pop.hidden = false;
+  const g = wrapOf(p.id).querySelector(`[data-id="${a.id}"]`);
+  const r = g ? g.getBoundingClientRect() : { left: innerWidth / 2, right: innerWidth / 2, top: innerHeight / 3, bottom: innerHeight / 3 };
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let x = r.right + 10, y = r.top;
+  if (x + pw > innerWidth - 16) x = r.left - pw - 10;
+  if (x < 16) { x = Math.max(16, Math.min(innerWidth - pw - 16, r.left)); y = r.bottom + 10; }
+  pop.style.left = x + 'px'; pop.style.top = Math.max(16, Math.min(innerHeight - ph - 16, y)) + 'px';
+  setTimeout(() => ta.focus(), 0);
+}
+function closeNote(keep) {
+  if (!noteEd) return;
+  const { p, a, isNew, before } = noteEd; noteEd = null;
+  $('notePop').hidden = true;
+  a.text = $('noteText').value.replace(/\s+$/, '');
+  if (!keep || (isNew && !a.text)) { p.anns = p.anns.filter(x => x !== a); if (isNew) S.undo.pop(); if (S.selected) S.selected = null; }
+  else if (!isNew && a.text === before) S.undo.pop();
+  renderAnns(p); updateUI();
+}
+$('noteOk').addEventListener('click', () => closeNote(true));
+$('noteDel').addEventListener('click', () => closeNote(false));
+$('noteText').addEventListener('keydown', e => {
+  if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); closeNote(true); }
+  e.stopPropagation();
 });
 
 /* ---------- inline text editing ---------- */
 function startEdit(p, a, isNew) {
   if (S.editing) commitEdit();
   if (!isNew) pushHistory();
-  S.editing = { page: p, ann: a, isNew, before: a.text };
+  S.editing = { page: p, ann: a, isNew, before: JSON.stringify(a) };
   S.selected = null;
+  S.props = { ...S.props, size: a.size, font: a.font || 'helv', bold: !!a.bold, italic: !!a.italic, align: a.align || 'left', fill: a.fill || null, color: a.color };
+  syncProps(a); refreshProps();
   renderAnns(p);
   const svg = wrapOf(p.id).querySelector('svg.ov');
   const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
@@ -801,24 +1291,38 @@ function startEdit(p, a, isNew) {
   ta.className = 'editbox'; ta.id = 'edit-' + a.id; ta.spellcheck = false;
   ta.setAttribute('aria-label', 'Text');
   ta.value = a.text;
-  ta.style.fontSize = a.size + 'px'; ta.style.color = a.color;
   fo.appendChild(ta);
   const fit = () => {
     const lines = ta.value.split('\n');
-    const w = Math.max(a.size * 6, ...lines.map(l => measure(l, a.size))) + a.size * 1.5;
+    const w = Math.max(a.size * 6, ...lines.map(l => measure(l, a.size, a))) + a.size * 1.5;
     fo.setAttribute('x', a.x); fo.setAttribute('y', a.y);
     fo.setAttribute('width', w); fo.setAttribute('height', lines.length * a.size * 1.2 + 2);
   };
-  fit();
+  S.editing.fit = fit; S.editing.ta = ta;
+  styleEditBox(a);
   ta.addEventListener('input', () => { a.text = ta.value; fit(); });
   ta.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' || (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey))) { ev.preventDefault(); commitEdit(); }
     ev.stopPropagation();
   });
-  ta.addEventListener('blur', () => setTimeout(() => { if (S.editing && S.editing.ann === a) commitEdit(); }, 0));
+  ta.addEventListener('blur', ev => {
+    // clicking a text property in the toolbar keeps the edit open and changes the text being typed
+    if (ev.relatedTarget && ev.relatedTarget.closest('.propbar')) return;
+    setTimeout(() => { if (S.editing && S.editing.ann === a && document.activeElement !== ta && !(document.activeElement && document.activeElement.closest('.propbar'))) commitEdit(); }, 0);
+  });
   svg.appendChild(fo);
   setTimeout(() => ta.focus({ preventScroll: true }), 0);
 }
+function styleEditBox(a) {
+  const ed = S.editing; if (!ed || ed.ann !== a) return;
+  const ta = ed.ta;
+  Object.assign(ta.style, { fontSize: a.size + 'px', color: a.color, fontFamily: fontCss(a), fontWeight: a.bold ? 'bold' : 'normal',
+    fontStyle: a.italic ? 'italic' : 'normal', textAlign: a.align || 'left', background: a.fill || 'rgba(255,255,255,.7)' });
+  ed.fit();
+  if (document.activeElement !== ta) setTimeout(() => ta.focus({ preventScroll: true }), 0);
+}
+// keep focus in the text box when toolbar buttons are pressed (Safari does not focus buttons)
+document.querySelectorAll('.propbar button').forEach(b => b.addEventListener('mousedown', e => { if (S.editing) e.preventDefault(); }));
 function commitEdit() {
   const ed = S.editing; if (!ed) return;
   S.editing = null;
@@ -827,7 +1331,7 @@ function commitEdit() {
   if (!a.text.trim()) {
     p.anns = p.anns.filter(x => x !== a);
     if (isNew) S.undo.pop();
-  } else if (!isNew && a.text === before) S.undo.pop();
+  } else if (!isNew && JSON.stringify(a) === before) S.undo.pop();
   const svg = wrapOf(p.id) && wrapOf(p.id).querySelector('svg.ov');
   if (svg) svg.querySelectorAll('foreignObject').forEach(f => f.remove());
   renderAnns(p); updateUI();
@@ -966,18 +1470,20 @@ function visibleCenter(p) {
   const pt = toPage(svg, { clientX: cx, clientY: cy });
   return { x: Math.max(0, Math.min(p.w, pt.x)), y: Math.max(0, Math.min(p.h, pt.y)) };
 }
-function pasteAnn(src, fromPageId) {
-  const p = curPage(); if (!p) return;
-  const a = JSON.parse(JSON.stringify(src)); a.id = uid();
+function pasteAnns(list, fromPageId) {
+  const p = curPage(); if (!p || !list || !list.length) return;
   const off = fromPageId === p.id ? 12 : 0;
-  if (a.type === 'ink') a.points = a.points.map(([x, y]) => [r1(x + off), r1(y + off)]);
-  else { a.x = r1(a.x + off); a.y = r1(a.y + off); }
-  if (a.type === 'image' && clip && clip.images && clip.images[a.img] && !S.images[a.img]) S.images[a.img] = clip.images[a.img];
-  pushHistory(); p.anns.push(a);
+  const added = list.map(src => {
+    const a = clone(src); a.id = uid();
+    moveAnn(a, clone(a), off, off);
+    if (a.type === 'image' && clip && clip.images && clip.images[a.img] && !S.images[a.img]) S.images[a.img] = clip.images[a.img];
+    return a;
+  });
+  pushHistory(); p.anns.push(...added);
   if (S.tool !== 'select') setTool('select');
-  select(p, a);
+  setSelection(p, added.map(a => a.id));
   if (clip) clip.fromPageId = p.id;
-  toast('Eingefügt.');
+  toast(added.length > 1 ? `${added.length} Elemente eingefügt.` : 'Eingefügt.');
 }
 function placeImageCenter(url, ar) {
   const p = curPage(); if (!p) return;
@@ -992,11 +1498,14 @@ function placeImageCenter(url, ar) {
 function placeTextCenter(text) {
   const p = curPage(); if (!p) return;
   const c = visibleCenter(p);
-  const a = { id: uid(), type: 'text', x: c.x, y: c.y, text: text.replace(/\r\n?/g, '\n').replace(/\t/g, '    '), size: S.props.size, color: S.props.color, angle: p.rotation };
+  const P = S.props;
+  const a = { id: uid(), type: 'text', x: c.x, y: c.y, text: text.replace(/\r\n?/g, '\n').replace(/\t/g, '    '), size: P.size, color: P.color, angle: p.rotation,
+    font: P.font, bold: P.bold, italic: P.italic, align: P.align, fill: P.fill };
   pushHistory(); p.anns.push(a);
   if (S.tool !== 'select') setTool('select');
   select(p, a); toast('Text eingefügt. Doppelklick zum Bearbeiten.');
 }
+const clipText = list => list.filter(a => a.type === 'text' || a.type === 'note').map(a => a.text).join('\n');
 document.addEventListener('copy', e => {
   if (e.target.matches && e.target.matches('input, textarea')) return;
   const sel = window.getSelection();
@@ -1004,13 +1513,15 @@ document.addEventListener('copy', e => {
     if (sel.anchorNode && pagesEl.contains(sel.anchorNode)) setTimeout(() => toast('Text kopiert.'), 0);
     return;
   }
-  const s = selectedAnn(); if (!s) return;
+  const s = selList(); if (!s) return;
   e.preventDefault();
-  const data = { ann: s.a, images: s.a.type === 'image' && S.images[s.a.img] ? { [s.a.img]: S.images[s.a.img] } : {} };
-  clip = { ...data, fromPageId: s.p.id, text: s.a.type === 'text' ? s.a.text : '' };
+  const images = {};
+  s.list.forEach(a => { if (a.type === 'image' && S.images[a.img]) images[a.img] = S.images[a.img]; });
+  const data = { anns: s.list, images };
+  clip = { ...data, fromPageId: s.p.id, text: clipText(s.list) };
   e.clipboardData.setData('text/plain', clip.text);
   try { e.clipboardData.setData(CLIP_TYPE, JSON.stringify(data)); } catch {}
-  toast('Element kopiert. Mit Strg+V einfügen.');
+  toast(s.list.length > 1 ? `${s.list.length} Elemente kopiert. Mit Strg+V einfügen.` : 'Element kopiert. Mit Strg+V einfügen.');
 });
 document.addEventListener('paste', async e => {
   if (e.target.matches && e.target.matches('input, textarea, select')) return;
@@ -1019,8 +1530,8 @@ document.addEventListener('paste', async e => {
   let raw = ''; try { raw = cd.getData(CLIP_TYPE); } catch {}
   if (raw) {
     e.preventDefault();
-    try { const d = JSON.parse(raw); clip = { ...d, fromPageId: clip && clip.fromPageId, text: d.ann.type === 'text' ? d.ann.text : '' }; } catch { return; }
-    pasteAnn(clip.ann, clip.fromPageId); return;
+    try { const d = JSON.parse(raw); const anns = d.anns || (d.ann ? [d.ann] : []); clip = { anns, images: d.images, fromPageId: clip && clip.fromPageId, text: clipText(anns) }; } catch { return; }
+    pasteAnns(clip.anns, clip.fromPageId); return;
   }
   const file = [...cd.files].find(f => f.type.startsWith('image/'));
   if (file) {
@@ -1029,7 +1540,7 @@ document.addEventListener('paste', async e => {
     return;
   }
   const txt = cd.getData('text/plain');
-  if (clip && txt === clip.text) { e.preventDefault(); pasteAnn(clip.ann, clip.fromPageId); return; }
+  if (clip && txt === clip.text) { e.preventDefault(); pasteAnns(clip.anns, clip.fromPageId); return; }
   if (txt && txt.trim()) { e.preventDefault(); placeTextCenter(txt.trim()); }
 });
 $('btnCopyAnn').addEventListener('click', () => { if (!document.execCommand('copy')) toast('Kopieren mit Strg+C.'); });
@@ -1055,6 +1566,22 @@ function openSig() {
   sigCtx = sigCanvas.getContext('2d'); sigCtx.scale(dpr, dpr);
   sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round'; sigCtx.lineWidth = 2.6;
   sigHas = false;
+  renderSavedSigs();
+}
+function renderSavedSigs() {
+  const list = store.get('sigs', []);
+  $('sigSavedWrap').hidden = !list.length;
+  const box = $('sigSaved'); box.textContent = '';
+  list.forEach((sg, i) => {
+    const b = document.createElement('div'); b.className = 'sigitem'; b.tabIndex = 0; b.setAttribute('role', 'button'); b.title = 'Diese Unterschrift einfügen';
+    b.innerHTML = `<img alt="Gespeicherte Unterschrift ${i + 1}"><button type="button" class="x" title="Entfernen" aria-label="Unterschrift entfernen">✕</button>`;
+    b.querySelector('img').src = sg.url;
+    const use = () => { $('sigModal').hidden = true; addImage(sg.url, sg.ar, true); toast('Auf die Seite klicken, um die Unterschrift zu platzieren.'); };
+    b.addEventListener('click', e => { if (e.target.closest('.x')) return; use(); });
+    b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); use(); } });
+    b.querySelector('.x').addEventListener('click', () => { const l = store.get('sigs', []); l.splice(i, 1); store.set('sigs', l); renderSavedSigs(); });
+    box.appendChild(b);
+  });
 }
 const sigPt = e => { const r = sigCanvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
 sigCanvas.addEventListener('pointerdown', e => { sigDrawing = true; sigCanvas.setPointerCapture(e.pointerId); sigCtx.strokeStyle = $('sigColor').value; sigCtx.beginPath(); sigCtx.moveTo(...sigPt(e)); });
@@ -1073,25 +1600,90 @@ $('sigOk').addEventListener('click', () => {
   const c = document.createElement('canvas'); c.width = x1 - x0 + 1; c.height = y1 - y0 + 1;
   c.getContext('2d').drawImage(sigCanvas, x0, y0, c.width, c.height, 0, 0, c.width, c.height);
   $('sigModal').hidden = true;
-  addImage(c.toDataURL('image/png'), c.width / c.height, true);
+  const url = c.toDataURL('image/png'), ar = c.width / c.height;
+  if ($('sigRemember').checked) {
+    const l = store.get('sigs', []).filter(x => x.url !== url);
+    l.unshift({ url, ar });
+    if (!store.set('sigs', l.slice(0, 5))) toast('Die Unterschrift konnte in diesem Browser nicht gespeichert werden.');
+  }
+  addImage(url, ar, true);
   toast('Auf die Seite klicken, um die Unterschrift zu platzieren.');
 });
 
 /* ---------- export ---------- */
 function hexRgb(h) { const n = parseInt(h.slice(1), 16); return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255); }
-async function exportPdf() {
+const hexArr = h => { const n = parseInt(h.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
+const STD_FONT = {
+  helv: ['Helvetica', 'HelveticaBold', 'HelveticaOblique', 'HelveticaBoldOblique'],
+  times: ['TimesRoman', 'TimesRomanBold', 'TimesRomanItalic', 'TimesRomanBoldItalic'],
+  cour: ['Courier', 'CourierBold', 'CourierOblique', 'CourierBoldOblique']
+};
+
+// write the values typed into form fields into a source document
+async function fillForm(lib, si) {
+  const vals = [...S.form].filter(([k]) => k.startsWith(si + '|'));
+  if (!vals.length) return;
+  const form = lib.getForm();
+  for (const [k, v] of vals) {
+    const name = k.slice(k.indexOf('|') + 1);
+    try {
+      const f = form.getField(name);
+      if (f instanceof PDFTextField) f.setText(v || undefined);
+      else if (f instanceof PDFCheckBox) v ? f.check() : f.uncheck();
+      else if (f instanceof PDFRadioGroup) {
+        if (v) f.acroField.setValue(PDFName.of(v)); else f.clear();
+      } else if (f instanceof PDFDropdown || f instanceof PDFOptionList) {
+        if (!v.length) f.clear(); else f.select(f instanceof PDFOptionList || f.isMultiselect() ? v : v[0]);
+      }
+    } catch (e) { console.warn('Formularfeld', name, e); }
+  }
+  try { form.updateFieldAppearances(await lib.embedFont(StandardFonts.Helvetica)); }
+  catch (e) { console.warn(e); try { form.updateFieldAppearances(); } catch {} }
+}
+
+// copied pages keep their field widgets, but the document-level AcroForm has to be rebuilt
+function rebuildAcroForm(out, usedSources) {
+  const roots = new Set();
+  for (const pg of out.getPages()) {
+    const annots = pg.node.Annots(); if (!annots) continue;
+    for (let i = 0; i < annots.size(); i++) {
+      const ref = annots.get(i);
+      const a = out.context.lookup(ref);
+      if (!(a instanceof PDFDict) || a.get(PDFName.of('Subtype')) !== PDFName.of('Widget')) continue;
+      let cur = ref, dict = a, guard = 0;
+      while (dict.get(PDFName.of('Parent')) && guard++ < 32) { cur = dict.get(PDFName.of('Parent')); dict = out.context.lookup(cur, PDFDict); }
+      if (dict.get(PDFName.of('T'))) roots.add(cur);
+    }
+  }
+  if (!roots.size) return;
+  const acro = out.context.obj({ Fields: [...roots] });
+  for (const lib of usedSources) {
+    const sa = lib.catalog.lookupMaybe(PDFName.of('AcroForm'), PDFDict); if (!sa) continue;
+    const copier = PDFObjectCopier.for(lib.context, out.context);
+    for (const k of ['DR', 'DA', 'Q']) { const v = sa.get(PDFName.of(k)); if (v && !acro.get(PDFName.of(k))) acro.set(PDFName.of(k), copier.copy(v)); }
+  }
+  out.catalog.set(PDFName.of('AcroForm'), out.context.register(acro));
+}
+
+async function exportPdf(pages = S.pages) {
   const out = await PDFDocument.create();
-  const font = await out.embedFont(StandardFonts.Helvetica);
+  const fonts = {};
+  const getFont = async a => {
+    const f = STD_FONT[a.font] || STD_FONT.helv, name = f[(a.bold ? 1 : 0) + (a.italic ? 2 : 0)];
+    return fonts[name] || (fonts[name] = await out.embedFont(StandardFonts[name]));
+  };
+  const base = await getFont({});
   const okChar = new Map();
   const clean = s => [...s].map(ch => {
-    if (!okChar.has(ch)) { try { font.encodeText(ch); okChar.set(ch, true); } catch { okChar.set(ch, false); } }
+    if (!okChar.has(ch)) { try { base.encodeText(ch); okChar.set(ch, true); } catch { okChar.set(ch, false); } }
     return okChar.get(ch) ? ch : '?';
   }).join('');
+  const libs = new Map();   // source index -> fresh PDFDocument (forms get filled in, so never reuse between exports)
   const embedded = {};
-  for (const p of S.pages) {
+  for (const p of pages) {
     const src = S.sources[p.src];
-    if (!src.lib) src.lib = await PDFDocument.load(src.bytes, { ignoreEncryption: true });
-    const [pg] = await out.copyPages(src.lib, [p.idx]);
+    if (!libs.has(p.src)) { const lib = await PDFDocument.load(src.bytes, { ignoreEncryption: true }); await fillForm(lib, p.src); libs.set(p.src, lib); }
+    const [pg] = await out.copyPages(libs.get(p.src), [p.idx]);
     out.addPage(pg);
     pg.setRotation(degrees(p.rotation));
     const box = pg.getCropBox();
@@ -1099,23 +1691,50 @@ async function exportPdf() {
     for (const a of p.anns) {
       if (a.type === 'highlight') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, color: hexRgb(a.color), opacity: 0.38, blendMode: BlendMode.Multiply });
       else if (a.type === 'whiteout') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, color: rgb(1, 1, 1) });
-      else if (a.type === 'rect') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, borderColor: hexRgb(a.color), borderWidth: a.width });
+      else if (a.type === 'rect') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, borderColor: hexRgb(a.color), borderWidth: a.width, ...(a.fill ? { color: hexRgb(a.fill) } : { color: undefined }) });
+      else if (a.type === 'ellipse') pg.drawEllipse({ x: L + a.x + a.w / 2, y: T - a.y - a.h / 2, xScale: a.w / 2, yScale: a.h / 2, borderColor: hexRgb(a.color), borderWidth: a.width, ...(a.fill ? { color: hexRgb(a.fill) } : { color: undefined }) });
+      else if (a.type === 'line' || a.type === 'arrow') {
+        const g = a.type === 'arrow' ? arrowGeom(a) : null;
+        const ex = g ? g.lx : a.x2, ey = g ? g.ly : a.y2;
+        pg.drawLine({ start: { x: L + a.x1, y: T - a.y1 }, end: { x: L + ex, y: T - ey }, thickness: a.width, color: hexRgb(a.color), lineCap: g ? LineCapStyle.Butt : LineCapStyle.Round });
+        if (g) pg.drawSvgPath(`M${g.head[0].join(' ')} L${g.head[1].join(' ')} L${g.head[2].join(' ')} Z`, { x: L, y: T, color: hexRgb(a.color) });
+      }
       else if (a.type === 'ink') pg.drawSvgPath(inkPath(a.points), { x: L, y: T, borderColor: hexRgb(a.color), borderWidth: a.width, borderLineCap: LineCapStyle.Round });
       else if (a.type === 'image') {
         const im = S.images[a.img]; if (!im) continue;
         if (!embedded[a.img]) embedded[a.img] = im.url.startsWith('data:image/jpeg') ? await out.embedJpg(im.url) : await out.embedPng(im.url);
         pg.drawImage(embedded[a.img], { x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h });
+      } else if (a.type === 'note') {
+        const now = new Date(), pad = n => String(n).padStart(2, '0');
+        const date = `D:${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        const ann = out.context.obj({
+          Type: 'Annot', Subtype: 'Text', Rect: [L + a.x, T - a.y - NOTE, L + a.x + NOTE, T - a.y],
+          Contents: PDFHexString.fromText(a.text || ''), C: hexArr(a.color), Name: 'Comment', F: 28, Open: false,
+          T: PDFHexString.fromText('Blattwerk'), M: PDFString.of(date), NM: PDFString.of(a.id)
+        });
+        pg.node.addAnnot(out.context.register(ann));
       } else if (a.type === 'text') {
-        const th = -(a.angle || 0) * Math.PI / 180;
-        a.text.split('\n').forEach((line, i) => {
+        const font = await getFont(a);
+        const th = -(a.angle || 0) * Math.PI / 180, cos = Math.cos(th), sin = Math.sin(th);
+        const lines = a.text.split('\n').map(clean);
+        const widths = lines.map(l => font.widthOfTextAtSize(l, a.size));
+        const bw = Math.max(a.size * 0.6, ...widths), bh = lines.length * a.size * 1.2;
+        // (vx, vy) is an offset in the text's own frame, y pointing down
+        const at = (vx, vy) => ({ x: L + a.x + vx * cos - vy * sin, y: T - (a.y + vx * sin + vy * cos) });
+        if (a.fill) {
+          const o = at(-TEXT_PAD, bh + TEXT_PAD);
+          pg.drawRectangle({ x: o.x, y: o.y, width: bw + TEXT_PAD * 2, height: bh + TEXT_PAD * 2, color: hexRgb(a.fill), rotate: degrees(a.angle || 0) });
+        }
+        lines.forEach((line, i) => {
           if (!line) return;
-          const d = a.size * 0.8 + i * a.size * 1.2;
-          const dx = -d * Math.sin(th), dy = d * Math.cos(th);
-          pg.drawText(clean(line), { x: L + a.x + dx, y: T - (a.y + dy), size: a.size, font, color: hexRgb(a.color), rotate: degrees(a.angle || 0) });
+          const ox = a.align === 'center' ? (bw - widths[i]) / 2 : a.align === 'right' ? bw - widths[i] : 0;
+          const o = at(ox, a.size * 0.8 + i * a.size * 1.2);
+          pg.drawText(line, { x: o.x, y: o.y, size: a.size, font, color: hexRgb(a.color), rotate: degrees(a.angle || 0) });
         });
       }
     }
   }
+  try { rebuildAcroForm(out, [...libs.values()]); } catch (e) { console.warn('AcroForm', e); }
   return out.save();
 }
 
@@ -1136,6 +1755,216 @@ async function save() {
   } finally { btn.disabled = false; label.textContent = 'Speichern'; }
 }
 
+/* ---------- search (Ctrl+F) ---------- */
+const SR = { q: '', hits: [], cur: -1, token: 0 };
+const textCache = new Map();   // pageKey -> Promise<{ lower, segs, view }>
+// lower-case without changing string length, so offsets still map onto the text items
+const lowerKeep = s => s.replace(/[\s\S]/g, c => { const l = c.toLowerCase(); return l.length === 1 ? l : c; });
+function textIndex(p) {
+  const key = pageKey(p);
+  if (!textCache.has(key)) textCache.set(key, (async () => {
+    const page = await S.sources[p.src].doc.getPage(p.idx + 1);
+    const tc = await page.getTextContent();
+    let str = ''; const segs = [];
+    for (const it of tc.items) {
+      if (typeof it.str !== 'string') continue;
+      const s0 = str.length; str += it.str;
+      segs.push({ s: s0, e: str.length, it });
+      if (it.hasEOL) str += ' ';
+    }
+    return { lower: lowerKeep(str).replace(/\s/g, ' '), segs, view: page.view };
+  })().catch(e => { console.warn(e); return { lower: '', segs: [], view: [0, 0, 0, 0] }; }));
+  return textCache.get(key);
+}
+function hitRects(ix, ms, me) {
+  const out = [];
+  for (const sg of ix.segs) {
+    if (sg.e <= ms || sg.s >= me) continue;
+    const it = sg.it, t = it.transform, len = it.str.length || 1;
+    const a0 = Math.max(ms, sg.s) - sg.s, a1 = Math.min(me, sg.e) - sg.s;
+    const fh = Math.hypot(t[2], t[3]) || it.height || 10;
+    const base = ix.view[3] - t[5];
+    out.push({ x: r1(t[4] - ix.view[0] + it.width * a0 / len), y: r1(base - fh * 0.86), w: r1(Math.max(1, it.width * (a1 - a0) / len)), h: r1(fh * 1.12) });
+  }
+  return out;
+}
+async function runSearch(q) {
+  const token = ++SR.token;
+  SR.q = q;
+  const needle = lowerKeep(q.trim()).replace(/\s+/g, ' ');
+  if (!needle) { SR.hits = []; SR.cur = -1; showHits(); return; }
+  $('searchCount').textContent = 'Suche …';
+  const hits = [];
+  for (const p of S.pages) {
+    const ix = await textIndex(p);
+    if (token !== SR.token) return;
+    let i = ix.lower.indexOf(needle);
+    while (i !== -1) { hits.push({ pageId: p.id, rects: hitRects(ix, i, i + needle.length) }); i = ix.lower.indexOf(needle, i + needle.length); }
+  }
+  SR.hits = hits;
+  // start at the first hit on or after the page being looked at
+  const ci = S.pages.findIndex(p => p.id === S.current);
+  SR.cur = hits.length ? Math.max(0, hits.findIndex(h => S.pages.findIndex(p => p.id === h.pageId) >= ci)) : -1;
+  showHits();
+  if (SR.cur >= 0) gotoHit(SR.cur);
+}
+function showHits() {
+  S.pages.forEach(renderAnns);
+  const n = SR.hits.length;
+  $('searchCount').textContent = !SR.q.trim() ? '' : n ? `${SR.cur + 1} / ${n}` : 'Keine Treffer';
+  $('searchPrev').disabled = $('searchNext').disabled = n < 2;
+}
+function gotoHit(i) {
+  const n = SR.hits.length; if (!n) return;
+  const prev = SR.hits[SR.cur];
+  SR.cur = (i + n) % n;
+  const h = SR.hits[SR.cur];
+  [prev && prev.pageId, h.pageId].forEach(id => { const p = pageById(id); if (p) renderAnns(p); });
+  $('searchCount').textContent = `${SR.cur + 1} / ${n}`;
+  const w = wrapOf(h.pageId); if (!w) return;
+  S.current = h.pageId; markCurrent();
+  const el = w.querySelector('.hit.cur');
+  const vr = viewer.getBoundingClientRect(), r = (el || w).getBoundingClientRect();
+  viewer.scrollTop += r.top - (vr.top + vr.height * 0.35);
+  if (r.left < vr.left + 16 || r.right > vr.right - 16) viewer.scrollLeft += r.left - (vr.left + vr.width / 2);
+}
+let searchT;
+function openSearch() {
+  const bar = $('searchbar'), inp = $('searchInput');
+  bar.hidden = false;
+  if (!inp.value) { const sel = window.getSelection(); if (sel && !sel.isCollapsed && pagesEl.contains(sel.anchorNode)) inp.value = sel.toString().trim().slice(0, 80); }
+  inp.focus(); inp.select();
+  if (inp.value.trim() && inp.value !== SR.q) runSearch(inp.value);
+}
+function closeSearch() {
+  if ($('searchbar').hidden && !SR.hits.length) return;
+  $('searchbar').hidden = true; clearTimeout(searchT); SR.token++;
+  SR.q = ''; SR.hits = []; SR.cur = -1;
+  S.pages.forEach(renderAnns);
+}
+$('btnSearch').addEventListener('click', () => $('searchbar').hidden ? openSearch() : closeSearch());
+$('searchInput').addEventListener('input', e => { clearTimeout(searchT); const v = e.target.value; searchT = setTimeout(() => runSearch(v), 200); });
+$('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (e.target.value !== SR.q) { clearTimeout(searchT); runSearch(e.target.value); }
+    else gotoHit(SR.cur + (e.shiftKey ? -1 : 1));
+  } else if (e.key === 'Escape') { e.preventDefault(); closeSearch(); }
+});
+$('searchNext').addEventListener('click', () => gotoHit(SR.cur + 1));
+$('searchPrev').addEventListener('click', () => gotoHit(SR.cur - 1));
+$('searchClose').addEventListener('click', closeSearch);
+
+/* ---------- extract / split pages ---------- */
+function parseRanges(str, n) {
+  const groups = [];
+  for (const tok of str.split(/[,;]/).map(t => t.trim()).filter(Boolean)) {
+    const m = /^(\d*)\s*(?:[-–]\s*(\d*))?$/.exec(tok);
+    if (!m || (!m[1] && !m[2] && !tok.includes('-') && !tok.includes('–'))) throw new Error(`„${tok}“ ist keine gültige Angabe.`);
+    const isRange = /[-–]/.test(tok);
+    const a = m[1] ? +m[1] : 1, b = isRange ? (m[2] ? +m[2] : n) : a;
+    if (a < 1 || b < 1 || a > n || b > n) throw new Error(`Seite ${Math.max(a, b) > n ? Math.max(a, b) : Math.min(a, b)} gibt es nicht (das Dokument hat ${n} Seiten).`);
+    const g = [];
+    for (let i = a; a <= b ? i <= b : i >= b; i += a <= b ? 1 : -1) g.push(i - 1);
+    groups.push({ label: a === b ? String(a) : `${a}-${b}`, idx: g });
+  }
+  if (!groups.length) throw new Error('Bitte Seiten angeben.');
+  return groups;
+}
+function openExtract() {
+  if (S.editing) commitEdit();
+  const i = S.pages.findIndex(p => p.id === S.current);
+  $('exRange').value = String(i + 1);
+  $('exInfo').textContent = `Das Dokument hat ${S.pages.length} Seite${S.pages.length === 1 ? '' : 'n'}.`;
+  $('extractModal').hidden = false;
+  setTimeout(() => { $('exRange').focus(); $('exRange').select(); }, 0);
+}
+async function doExtract() {
+  let groups;
+  try { groups = parseRanges($('exRange').value, S.pages.length); }
+  catch (err) { $('exInfo').textContent = err.message; return; }
+  const mode = document.querySelector('input[name="exMode"]:checked').value;
+  const base = S.fileName.replace(/\.pdf$/i, '');
+  let jobs;
+  if (mode === 'one') jobs = [{ label: groups.map(g => g.label).join('_'), idx: groups.flatMap(g => g.idx) }];
+  else if (mode === 'groups') jobs = groups;
+  else jobs = [...new Set(groups.flatMap(g => g.idx))].map(i => ({ label: String(i + 1), idx: [i] }));
+  $('extractModal').hidden = true;
+  const btn = $('exOk'); btn.disabled = true;
+  try {
+    for (const [n, j] of jobs.entries()) {
+      if (jobs.length > 1) toast(`Erstelle Datei ${n + 1} von ${jobs.length} …`);
+      const bytes = await exportPdf(j.idx.map(i => S.pages[i]));
+      await saveBlob(`${base}-seite${j.idx.length > 1 ? 'n' : ''}-${j.label}.pdf`, new Blob([bytes], { type: 'application/pdf' }));
+      if (n < jobs.length - 1) await new Promise(r => setTimeout(r, 400));
+    }
+    if (jobs.length > 1) toast(`${jobs.length} Dateien gespeichert.`);
+  } catch (err) {
+    console.error(err); toast('Extrahieren fehlgeschlagen: ' + (err && err.message ? err.message : err), 5000);
+  } finally { btn.disabled = false; }
+}
+$('btnExtract').addEventListener('click', openExtract);
+$('exCancel').addEventListener('click', () => { $('extractModal').hidden = true; });
+$('exOk').addEventListener('click', doExtract);
+$('exRange').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doExtract(); } });
+
+/* ---------- print: render the exported PDF to images, so print matches the saved file ---------- */
+let printing = false;
+async function printDoc() {
+  if (printing || !S.pages.length) return;
+  printing = true;
+  if (S.editing) commitEdit();
+  closeNote(true);
+  const area = $('printArea');
+  area.querySelectorAll('img').forEach(i => URL.revokeObjectURL(i.src));
+  area.textContent = '';
+  toast('Druckansicht wird vorbereitet …', 60000);
+  try {
+    const doc = await pdfjsLib.getDocument({ data: await exportPdf() }).promise;
+    const k = doc.numPages > 60 ? 1.4 : 2;
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const vp = page.getViewport({ scale: k });
+      const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+      const img = new Image(); img.alt = ''; img.src = URL.createObjectURL(blob);
+      area.appendChild(img);
+      await img.decode().catch(() => {});
+    }
+    doc.destroy();
+    $('toast').hidden = true;
+    window.print();
+  } catch (err) {
+    console.error(err); toast('Drucken fehlgeschlagen: ' + (err && err.message ? err.message : err), 5000);
+  } finally { printing = false; }
+}
+$('btnPrint').addEventListener('click', printDoc);
+
+/* ---------- theme ---------- */
+const THEME_ICON = {
+  auto: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/>',
+  light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  dark: '<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/>'
+};
+const THEME_NAME = { auto: 'automatisch (wie System)', light: 'hell', dark: 'dunkel' };
+function applyTheme(t) {
+  if (!THEME_ICON[t]) t = 'auto';
+  if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  const b = $('btnTheme');
+  b.querySelector('svg').innerHTML = THEME_ICON[t];
+  b.title = 'Darstellung: ' + THEME_NAME[t];
+  b.dataset.theme = t;
+}
+$('btnTheme').addEventListener('click', () => {
+  const order = ['auto', 'light', 'dark'];
+  const t = order[(order.indexOf($('btnTheme').dataset.theme || 'auto') + 1) % 3];
+  applyTheme(t); store.set('theme', t);
+  toast('Darstellung: ' + THEME_NAME[t]);
+});
+applyTheme(store.get('theme', 'auto'));
+
 /* ---------- UI wiring ---------- */
 function updateUI() {
   $('btnUndo').disabled = !S.undo.length;
@@ -1143,6 +1972,7 @@ function updateUI() {
   $('btnDelAnn').disabled = !S.selected;
   $('btnCopyAnn').disabled = !S.selected;
   $('btnDelPage').disabled = S.pages.length < 2;
+  refreshProps();
   markCurrent();
 }
 $('btnOpen').addEventListener('click', () => $('fileOpen').click());
@@ -1171,20 +2001,36 @@ viewer.addEventListener('drop', e => {
 });
 viewer.addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); zoomStep(e.deltaY < 0 ? 1 : -1); } }, { passive: false });
 
+const openModal = () => ['sigModal', 'extractModal'].find(id => !$(id).hidden);
 document.addEventListener('keydown', e => {
-  if (e.target.matches('input, textarea, select') || !$('sigModal').hidden) { if (e.key === 'Escape') $('sigModal').hidden = true; return; }
-  const mod = e.ctrlKey || e.metaKey;
-  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-  else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
-  else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
-  else if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); $('fileOpen').click(); }
+  const mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
+  if (mod && key === 'f' && !openModal()) { e.preventDefault(); openSearch(); return; }
+  if (mod && key === 'p' && !openModal()) { e.preventDefault(); printDoc(); return; }
+  if (openModal()) { if (e.key === 'Escape') $(openModal()).hidden = true; return; }
+  if (e.target.matches('input, textarea, select')) return;
+  if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if (mod && key === 'y') { e.preventDefault(); redo(); }
+  else if (mod && key === 's') { e.preventDefault(); save(); }
+  else if (mod && key === 'o') { e.preventDefault(); $('fileOpen').click(); }
+  else if (mod && key === 'a' && S.tool === 'select') {
+    const p = curPage(); if (p && p.anns.length) { e.preventDefault(); setSelection(p, p.anns.map(a => a.id)); }
+  }
+  else if (mod && (key === 'b' || key === 'i') && selList() && selList().list.some(a => a.type === 'text')) {
+    e.preventDefault(); oneShot(key === 'b' ? 'bold' : 'italic', !S.props[key === 'b' ? 'bold' : 'italic']);
+  }
   else if (mod) return;
   else if (e.key === 'Delete' || e.key === 'Backspace') { if (S.selected) { e.preventDefault(); deleteSelected(); } }
+  else if (e.key.startsWith('Arrow') && S.selected && S.tool === 'select') {
+    e.preventDefault();
+    const st = e.shiftKey ? 10 : 1;
+    nudge(e.key === 'ArrowLeft' ? -st : e.key === 'ArrowRight' ? st : 0, e.key === 'ArrowUp' ? -st : e.key === 'ArrowDown' ? st : 0);
+  }
   else if (e.key === 'Escape' && !$('snapbar').hidden) clearSnap();
+  else if (e.key === 'Escape' && !$('searchbar').hidden) closeSearch();
   else if (e.key === 'Escape') { if (S.tool === 'place') setTool('select'); else if (S.selected) select(pageById(S.selected.pageId), null); }
-  else {
-    const map = { v: 'select', i: 'textsel', k: 'snap', t: 'text', d: 'ink', h: 'highlight', r: 'rect', w: 'whiteout' };
-    const t = map[e.key.toLowerCase()]; if (t) setTool(t);
+  else if (!e.altKey) {
+    const map = { v: 'select', i: 'textsel', k: 'snap', t: 'text', d: 'ink', h: 'highlight', r: 'rect', e: 'ellipse', l: 'line', a: 'arrow', n: 'note', w: 'whiteout' };
+    const t = map[key]; if (t) setTool(t);
   }
 });
 let resizeT;
