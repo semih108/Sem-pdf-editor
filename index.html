@@ -1,9 +1,13 @@
 <meta charset="utf-8">
 <title>Blattwerk PDF</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <style>
+/* Schriften lokal gehostet (SIL OFL 1.1, siehe fonts/LICENSE-*.txt) - keine Anfragen an Google */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
 /* Layout: app shell — top bar, tool strip, page thumbnails left, scrolling "desk" with white sheets, status bar */
 :root {
   --bg: #eceef3;
@@ -293,7 +297,7 @@ function redo() { if (!S.redo.length) return; S.undo.push(snapshot()); restore(S
 /* ---------- loading documents ---------- */
 async function addSource(bytes) {
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  const doc = await pdfjsLib.getDocument({ data: data.slice() }).promise;
+  const doc = await pdfjsLib.getDocument({ data: data.slice(), isEvalSupported: false /* CVE-2024-4367 */ }).promise;
   S.sources.push({ bytes: data, doc, lib: null });
   const si = S.sources.length - 1, out = [];
   for (let i = 1; i <= doc.numPages; i++) {
