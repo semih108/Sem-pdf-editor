@@ -2,8 +2,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Blattwerk PDF</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <style>
 /* Layout: app shell — top bar, tool strip, page thumbnails left, scrolling "desk" with white sheets, status bar */
 :root {
@@ -18,8 +16,8 @@
   --desk: #cfd4de;
   --danger: #c3362b;
   --shadow: 0 1px 2px rgba(20,28,50,.18), 0 6px 24px rgba(20,28,50,.14);
-  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-brand: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-brand: var(--f-ui);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -319,6 +317,30 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
 .banner { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 44; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 10px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; font-size: 13px; }
 .banner .btn { height: 30px; }
 
+
+/* send check */
+.vcsum { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+.vcsum.ok { background: color-mix(in srgb, #1f7a3a 14%, var(--panel)); }
+.vcsum.warn { background: color-mix(in srgb, #c07400 14%, var(--panel)); }
+.vcsum.bad { background: color-mix(in srgb, #c3362b 13%, var(--panel)); }
+.vcbig { font-size: 22px; min-width: 28px; text-align: center; }
+.vclist { display: grid; gap: 8px; max-height: min(52vh, 560px); overflow: auto; padding-right: 2px; }
+.vcitem { border: 1px solid var(--line); border-left: 4px solid var(--sev); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
+.vchead { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.vchead input { accent-color: var(--accent); margin: 0; }
+.vcsev { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--sev); }
+.vccount { margin-left: auto; font-size: 12px; font-weight: 600; min-width: 22px; text-align: center; padding: 1px 7px; border-radius: 10px; background: var(--bg); }
+.vcitem p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.vcitem summary { cursor: pointer; font-size: 12.5px; color: var(--accent); }
+.vcitem ul { margin: 6px 0 0; padding: 0; list-style: none; max-height: 150px; overflow: auto; font-size: 12.5px; }
+.vcitem li { display: flex; gap: 8px; padding: 2px 0; overflow-wrap: anywhere; }
+.vcgo { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font: inherit; white-space: nowrap; text-decoration: underline; }
+.vcfix { font-size: 12px; color: var(--fg); }
+.vcpass { font-size: 12.5px; color: var(--muted); }
+.vcres { border-radius: 8px; padding: 10px 12px; background: var(--bg); font-size: 13px; display: grid; gap: 3px; }
+.vcres.ok { background: color-mix(in srgb, #1f7a3a 13%, var(--panel)); }
+.vcres.bad { background: color-mix(in srgb, #c3362b 13%, var(--panel)); }
+
 /* print */
 #printArea { display: none; }
 @media print {
@@ -370,6 +392,7 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
       <button class="btn icon" data-cmd="search" title="Im Dokument suchen (Strg+F)" aria-label="Suchen"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
       <button class="btn icon hide-sm" data-cmd="palette" title="Befehl suchen (Strg+K)" aria-label="Befehl suchen"><svg class="i" viewBox="0 0 24 24"><path d="M9 6a3 3 0 10-3 3h12a3 3 0 10-3-3v12a3 3 0 103-3H6a3 3 0 103 3z"/></svg></button>
     </span>
+    <button class="btn" data-cmd="check" title="Versand-Check: prüfen, was beim Weitergeben ungewollt mitginge"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span class="hide-sm">Prüfen</span></button>
     <span class="split">
       <button class="btn primary" id="btnSave" data-cmd="save" title="Als PDF speichern (Strg+S)"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Speichern</span></button>
       <button class="btn primary icon" data-cmd="saveas" title="Speichern mit Optionen: verkleinern, Passwort, Metadaten (Strg+Umschalt+S)" aria-label="Speichern mit Optionen"><svg class="i" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
@@ -391,6 +414,7 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
       <button class="tool" data-cmd="open" title="PDF oder Bilder öffnen (Strg+O). Mehrere Dateien werden zusammengeführt."><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Öffnen</span></button>
       <button class="tool" data-cmd="merge" title="Weitere PDFs oder Bilder hinten anhängen"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span>Zusammenführen</span></button>
       <span class="sep"></span>
+      <button class="tool" data-cmd="check" title="Versand-Check: prüfen, was beim Weitergeben ungewollt mitginge"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span>Versand-Check</span></button>
       <button class="tool" data-cmd="save" title="Als PDF speichern (Strg+S)"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Speichern</span></button>
       <button class="tool" data-cmd="saveas" title="Speichern mit Optionen: verkleinern, Passwort, Metadaten (Strg+Umschalt+S)"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Mit Optionen</span></button>
       <button class="tool" data-cmd="print" title="Drucken (Strg+P)"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg><span>Drucken</span></button>
@@ -483,6 +507,8 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
       <button class="tool" data-cmd="flatten" title="Speichern mit fest eingebrannten Formularwerten"><svg class="i" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/></svg><span>Flach speichern</span></button>
     </div>
     <div class="rib" id="rib-protect" data-rib="protect" role="tabpanel" aria-labelledby="tab-protect" hidden>
+      <button class="tool" data-cmd="check" title="Versand-Check: prüfen, was beim Weitergeben ungewollt mitginge"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span>Versand-Check</span></button>
+      <span class="sep"></span>
       <button class="tool" data-tool="select" title="Auswählen &amp; verschieben (V)"><svg class="i" viewBox="0 0 24 24"><path d="M6 3l12 9-5.5 1.2L15 20l-2.6 1.1-2.6-6.6L6 18z"/></svg><span>Auswahl</span></button>
       <span class="sep"></span>
       <button class="tool" data-tool="redact" title="Schwärzen (X) – der Inhalt wird beim Speichern wirklich entfernt"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="1" fill="currentColor"/><path d="M3 5h10M3 19h7M15 19h6"/></svg><span>Schwärzen</span></button>
@@ -655,6 +681,27 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
   </div>
 </div>
 
+<div class="modal" id="vcModal" hidden>
+  <div class="card wide" role="dialog" aria-modal="true" aria-labelledby="vcTitle">
+    <h2 id="vcTitle">Versand-Check</h2>
+    <p>Prüft, was beim Weitergeben dieser PDF ungewollt mitgeschickt würde. Alles läuft lokal in deinem Browser, die Datei verlässt den Rechner nicht.</p>
+    <div id="vcRun" style="display:grid;gap:6px"><div class="muted" id="vcStatus"></div><progress id="vcProg" max="1" value="0"></progress></div>
+    <div id="vcBody" hidden style="display:grid;gap:10px">
+      <div class="vcsum" id="vcSummary"></div>
+      <div class="vclist" id="vcList"></div>
+      <div class="vcpass" id="vcPassed"></div>
+    </div>
+    <div class="vcres" id="vcResult" hidden></div>
+    <div class="row">
+      <button class="btn" id="vcReport">Bericht speichern</button>
+      <span class="spacer"></span>
+      <button class="btn" id="vcClose" data-cancel>Schließen</button>
+      <button class="btn" id="vcFixOnly" title="Behebungen im Editor vornehmen, ohne zu speichern">Nur beheben</button>
+      <button class="btn primary" id="vcFix">Beheben und sicher speichern</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="pwModal" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
     <h2 id="pwTitle">Passwort</h2>
@@ -739,6 +786,10 @@ progress { width: 100%; height: 10px; accent-color: var(--accent); }
     <label class="opt"><input type="checkbox" id="rdEmail" checked> E-Mail-Adressen</label>
     <label class="opt"><input type="checkbox" id="rdPhone" checked> Telefonnummern</label>
     <label class="opt"><input type="checkbox" id="rdIban" checked> IBAN</label>
+    <label class="opt"><input type="checkbox" id="rdTax" checked> Steuer-ID</label>
+    <label class="opt"><input type="checkbox" id="rdSv" checked> Sozialversicherungsnummer</label>
+    <label class="opt"><input type="checkbox" id="rdCard" checked> Kreditkartennummern</label>
+    <label class="opt"><input type="checkbox" id="rdBirth" checked> Geburtsdaten (z. B. „geb. 12.03.1980“)</label>
     <label class="f">Eigene Begriffe (einer pro Zeile, Groß-/Kleinschreibung egal)<textarea id="rdWords" placeholder="z. B. Max Mustermann"></textarea></label>
     <div class="muted" id="rdInfo"></div>
     <div class="found" id="rdFound" hidden></div>
@@ -1040,7 +1091,7 @@ function redo() { if (!S.redo.length) return; S.undo.push(snapshot()); restore(S
 async function loadSource(bytes, name) {
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let usedPw = '', cancelled = false;
-  const task = pdfjsLib.getDocument({ data: data.slice() });
+  const task = pdfjsLib.getDocument({ isEvalSupported: false, data: data.slice() });
   task.onPassword = async (update, reason) => {
     const pw = await askPassword('Passwort erforderlich', reason === pdfjsLib.PasswordResponses.INCORRECT_PASSWORD
       ? `Das Passwort für „${name}“ ist nicht richtig. Bitte noch einmal versuchen.`
@@ -1416,7 +1467,7 @@ function annSVG(a, selected, single, clean) {
   let body = '';
   if (clean && (a.type === 'link' || a.type === 'field' || (clean === 'raster' && a.type === 'note'))) return '';
   switch (a.type) {
-    case 'redact': body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="#000"/><title>Schwärzung – wird beim Speichern endgültig</title>`; break;
+    case 'redact': body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="${a.white ? '#fff' : '#000'}"${a.white && !clean ? ` stroke="#8a90a0" stroke-width="${u}" stroke-dasharray="${3 * u} ${2 * u}"` : ''}/><title>${a.white ? 'Weiße Schwärzung' : 'Schwärzung'} – wird beim Speichern endgültig</title>`; break;
     case 'stamp': {
       const g = stampGeom(a, screenWidth), cx = a.x + a.w / 2;
       body = `<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" rx="${g.r}" fill="${a.color}" fill-opacity="0.07" stroke="${a.color}" stroke-width="${g.bw}"/>` +
@@ -2715,8 +2766,8 @@ async function rasterPage(out, p, font, clean) {
     try { ctx.drawImage(await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)), 0, 0); } catch (e) { console.warn(e); }
   }
   const reds = p.anns.filter(a => a.type === 'redact');
-  ctx.fillStyle = '#000';   // paint the boxes directly as well, independent of the SVG step
-  for (const a of reds) ctx.fillRect(Math.floor(a.x * k), Math.floor(a.y * k), Math.ceil(a.w * k) + 1, Math.ceil(a.h * k) + 1);
+  // paint the boxes directly as well, independent of the SVG step
+  for (const a of reds) (ctx.fillStyle = a.white ? '#fff' : '#000', ctx.fillRect(Math.floor(a.x * k), Math.floor(a.y * k), Math.ceil(a.w * k) + 1, Math.ceil(a.h * k) + 1));
   const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
   const img = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()));
   const pg = out.addPage([p.w, p.h]);
@@ -2777,6 +2828,67 @@ function writeOutline(out, refs) {
   out.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
 }
 
+// remove comments and/or scripts from a copied page (send check)
+function cleanPage(pg, ctx, opts) {
+  const N = n => PDFName.of(n), node = pg.node;
+  if (opts.stripJs) node.delete(N('AA'));
+  const annots = node.Annots(); if (!annots) return;
+  const keep = [];
+  for (let i = 0; i < annots.size(); i++) {
+    const ref = annots.get(i), a = ctx.lookup(ref);
+    if (!(a instanceof PDFDict)) continue;
+    const st = a.get(N('Subtype'));
+    if (opts.stripComments && st !== N('Widget') && st !== N('Link')) continue;
+    if (opts.stripJs) {
+      a.delete(N('AA'));
+      const act = a.lookupMaybe(N('A'), PDFDict);
+      if (act && /^\/(JavaScript|Launch|ImportData)$/.test(String(act.get(N('S'))))) a.delete(N('A'));
+      let par = a.lookupMaybe(N('Parent'), PDFDict), g = 0;   // calculation and format scripts sit on the fields
+      while (par && g++ < 32) { par.delete(N('AA')); par = par.lookupMaybe(N('Parent'), PDFDict); }
+    }
+    keep.push(ref);
+  }
+  node.set(N('Annots'), ctx.obj(keep));
+}
+const isDctImage = d => {
+  const f = d.get(PDFName.of('Filter'));
+  return d.get(PDFName.of('Subtype')) === PDFName.of('Image') &&
+    (f === PDFName.of('DCTDecode') || (f instanceof PDFArray && f.size() === 1 && f.get(0) === PDFName.of('DCTDecode')));
+};
+// byte ranges of EXIF/XMP (APP1), Photoshop/IPTC (APP13) and comment segments in a JPEG
+function jpegMetaRanges(b) {
+  if (b[0] !== 0xFF || b[1] !== 0xD8) return [];
+  const out = [];
+  let i = 2;
+  while (i + 4 <= b.length && b[i] === 0xFF) {
+    const m = b[i + 1];
+    if (m === 0xFF) { i++; continue; }
+    if (m === 0xDA || m === 0xD9) break;
+    if ((m >= 0xD0 && m <= 0xD7) || m === 0x01) { i += 2; continue; }
+    const len = (b[i + 2] << 8) | b[i + 3];
+    if (m === 0xE1 || m === 0xED || m === 0xFE) out.push([i, i + 2 + len]);
+    i += 2 + len;
+  }
+  return out;
+}
+// remove camera/location data from photos without re-encoding them
+function stripJpegMeta(out) {
+  let n = 0;
+  for (const [ref, obj] of out.context.enumerateIndirectObjects()) {
+    if (!(obj instanceof PDFRawStream) || !isDctImage(obj.dict)) continue;
+    const b = obj.contents, cut = jpegMetaRanges(b);
+    if (!cut.length) continue;
+    const parts = []; let at = 0;
+    for (const [x, y] of cut) { parts.push(b.subarray(at, x)); at = y; }
+    parts.push(b.subarray(at));
+    const nb = new Uint8Array(parts.reduce((k, q) => k + q.length, 0));
+    let o = 0; for (const q of parts) { nb.set(q, o); o += q.length; }
+    const nd = obj.dict.clone(out.context); nd.set(PDFName.of('Length'), PDFNumber.of(nb.length));
+    out.context.assign(ref, PDFRawStream.of(nd, nb)); n++;
+  }
+  return n;
+}
+
 // re-encode JPEG photos at a lower resolution; returns the number of bytes saved
 async function recompressImages(out, level) {
   const maxDim = level >= 2 ? 1400 : 2000, q = level >= 2 ? 0.62 : 0.78;
@@ -2808,6 +2920,20 @@ async function recompressImages(out, level) {
     saved += src.length - nb.length;
   }
   return saved;
+}
+
+function pruneUnreachable(doc) {
+  const ctx = doc.context, seen = new Set(), stack = [ctx.trailerInfo.Root, ctx.trailerInfo.Info].filter(Boolean);
+  while (stack.length) {
+    let o = stack.pop();
+    if (o instanceof PDFLib.PDFRef) { if (seen.has(o)) continue; seen.add(o); o = ctx.lookup(o); if (!o) continue; }
+    if (o instanceof PDFLib.PDFStream) o = o.dict;
+    if (o instanceof PDFDict) for (const [, v] of o.entries()) stack.push(v);
+    else if (o instanceof PDFArray) for (const v of o.asArray()) stack.push(v);
+  }
+  let n = 0;
+  for (const [ref] of ctx.enumerateIndirectObjects()) if (!seen.has(ref)) { ctx.delete(ref); n++; }
+  return n;
 }
 
 async function getLib(si) {
@@ -2844,6 +2970,7 @@ async function exportPdf(pages = S.pages, opts = {}) {
       if (!libs.has(p.src)) { const lib = await getLib(p.src); await fillForm(lib, p.src); libs.set(p.src, lib); }
       [pg] = await out.copyPages(libs.get(p.src), [p.idx]);
       out.addPage(pg);
+      if (opts.stripComments || opts.stripJs) cleanPage(pg, out.context, opts);
     }
     pg.setRotation(degrees(p.rotation));
     if (!refs.has(p.id)) refs.set(p.id, pg.ref);
@@ -2851,6 +2978,7 @@ async function exportPdf(pages = S.pages, opts = {}) {
     const L = box.x, T = box.y + box.height;
     if (!raster) for (const w of S.ocr.get(pageKey(p)) || []) invisibleText(pg, base, clean(w.text), L + w.bx, T - w.by, w.len, w.fh, w.rot || 0);
     const draw = async a => {
+      if (opts.stripComments && a.type === 'note') return;
       if (a.type === 'highlight') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, color: hexRgb(a.color), opacity: 0.38, blendMode: BlendMode.Multiply });
       else if (a.type === 'whiteout') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, color: rgb(1, 1, 1) });
       else if (a.type === 'rect') pg.drawRectangle({ x: L + a.x, y: T - a.y - a.h, width: a.w, height: a.h, borderColor: hexRgb(a.color), borderWidth: a.width, ...(a.fill ? { color: hexRgb(a.fill) } : { color: undefined }) });
@@ -2949,7 +3077,9 @@ async function exportPdf(pages = S.pages, opts = {}) {
     out.setModificationDate(new Date());
   }
   if (opts.flatten) { try { out.getForm().flatten({ updateFieldAppearances: false }); } catch (e) { console.warn('flatten', e); } }
+  if (opts.cleanImages) opts.cleanedImages = stripJpegMeta(out);
   if (+opts.compress > 0) opts.savedBytes = await recompressImages(out, +opts.compress);
+  pruneUnreachable(out);
   return out.save({ updateFieldAppearances: false });
 }
 
@@ -2975,7 +3105,8 @@ async function save(opts = S.saveOpts || {}) {
     await saveBlob(name, new Blob([bytes], { type: 'application/pdf' }));
     S.dirty = false; autosaveNow();
     const extra = [opts.protect && 'passwortgeschützt', opts.savedBytes > 0 && `Bilder um ${fmtSize(opts.savedBytes)} verkleinert`].filter(Boolean);
-    toast(`Gespeichert: ${name} (${fmtSize(bytes.length)}${extra.length ? ', ' + extra.join(', ') : ''})`, 4500);
+    setTimeout(() => toast(`Gespeichert: ${name} (${fmtSize(bytes.length)}${extra.length ? ', ' + extra.join(', ') : ''})`, 4500), 0);
+    return bytes;
   } catch (err) {
     console.error(err);
     toast('Die PDF konnte nicht erstellt werden: ' + (err && err.message ? err.message : err), 6000);
@@ -3206,7 +3337,7 @@ async function printDoc() {
   try {
     if (!(await checkPerm('print'))) return;
     toast('Druckansicht wird vorbereitet …', 60000);
-    const doc = await pdfjsLib.getDocument({ data: await exportPdf() }).promise;
+    const doc = await pdfjsLib.getDocument({ isEvalSupported: false, data: await exportPdf() }).promise;
     const k = doc.numPages > 60 ? 1.4 : 2;
     for (let i = 1; i <= doc.numPages; i++) {
       const page = await doc.getPage(i);
@@ -3492,28 +3623,60 @@ $('prOk').addEventListener('click', () => {
 $('prCancel').addEventListener('click', () => { $('propsModal').hidden = true; });
 
 /* ---------- redact by pattern ---------- */
-const PATTERNS = {
-  email: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
-  phone: /(?:\+\d{1,3}|\b0)[\d \/().-]{5,}\d/g,
-  iban: /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?\b/g
-};
+function ibanOk(m) {
+  const t = m.replace(/ /g, '').toUpperCase();
+  if (t.length < 15 || t.length > 34) return false;
+  let r = 0;
+  for (const ch of t.slice(4) + t.slice(0, 4)) for (const d of /\d/.test(ch) ? ch : String(ch.charCodeAt(0) - 55)) r = (r * 10 + +d) % 97;
+  return r === 1;
+}
+function taxIdOk(m) {   // German tax id: 11 digits, ISO 7064 MOD 11,10 check digit
+  const d = m.replace(/\D/g, '');
+  if (d.length !== 11 || d[0] === '0') return false;
+  let prod = 10;
+  for (let i = 0; i < 10; i++) { let sum = (+d[i] + prod) % 10; if (!sum) sum = 10; prod = (sum * 2) % 11; }
+  return (11 - prod) % 10 === +d[10];
+}
+function luhnOk(m) {
+  const d = m.replace(/\D/g, '');
+  if (d.length < 13 || d.length > 19) return false;
+  let sum = 0;
+  for (let i = 0; i < d.length; i++) { let v = +d[d.length - 1 - i]; if (i % 2) { v *= 2; if (v > 9) v -= 9; } sum += v; }
+  return sum % 10 === 0;
+}
+// order = priority: a phone-like run of digits inside an IBAN is not reported twice
+const PD_PATTERNS = [
+  { key: 'iban', id: 'rdIban', label: 'IBAN', re: /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){2,7}(?: ?[A-Z0-9]{1,4})?\b/g, ok: ibanOk },
+  { key: 'card', id: 'rdCard', label: 'Kreditkarte', re: /\b[3-6]\d{3}(?:[ -]?\d{4}){2}[ -]?\d{1,7}\b/g, ok: luhnOk },
+  { key: 'tax', id: 'rdTax', label: 'Steuer-ID', re: /\b\d{2} ?\d{3} ?\d{3} ?\d{3}\b/g, ok: taxIdOk },
+  { key: 'sv', id: 'rdSv', label: 'Sozialversicherungsnr.', re: /\b\d{2} ?[0-3]\d[01]\d{3} ?[A-Z] ?\d{3}\b/g },
+  { key: 'email', id: 'rdEmail', label: 'E-Mail', re: /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi },
+  { key: 'birth', id: 'rdBirth', label: 'Geburtsdatum', re: /(?:geb(?:oren)?\.?(?: am)?|Geburtsdatum:?)\s*\d{1,2}\.\s?\d{1,2}\.\s?(?:19|20)?\d{2}\b/gi },
+  { key: 'phone', id: 'rdPhone', label: 'Telefon', re: /(?:\+\d{1,3}|\b0)[\d \/().-]{5,}\d/g, ok: m => { const n = m.replace(/\D/g, '').length; return n >= 7 && n <= 16; } }
+];
+function matchPersonal(ix, keys) {
+  const out = [];
+  for (const P of PD_PATTERNS) {
+    if (!keys.includes(P.key)) continue;
+    const re = new RegExp(P.re.source, P.re.flags);
+    let m;
+    while ((m = re.exec(ix.str))) {
+      const s0 = m.index, e0 = s0 + m[0].length;
+      if ((P.ok && !P.ok(m[0])) || out.some(o => s0 < o.e && e0 > o.s)) continue;
+      out.push({ label: P.label, text: m[0], s: s0, e: e0, rects: hitRects(ix, s0, e0) });
+    }
+  }
+  return out;
+}
 let rdFound = [];
 function openRedact() { rdFound = []; $('rdFound').hidden = true; $('rdInfo').textContent = ''; $('rdOk').disabled = true; $('redactModal').hidden = false; }
 async function findPatterns() {
   const words = $('rdWords').value.split('\n').map(w => w.trim()).filter(Boolean);
-  const kinds = [['email', $('rdEmail').checked, 'E-Mail'], ['phone', $('rdPhone').checked, 'Telefon'], ['iban', $('rdIban').checked, 'IBAN']].filter(k => k[1]);
+  const keys = PD_PATTERNS.filter(P => $(P.id).checked).map(P => P.key);
   const found = [];
   for (const [pi, p] of S.pages.entries()) {
     const ix = await textIndex(p);
-    for (const [k, , label] of kinds) {
-      const re = new RegExp(PATTERNS[k].source, PATTERNS[k].flags);
-      let m;
-      while ((m = re.exec(ix.str))) {
-        const digits = m[0].replace(/\D/g, '').length;
-        if (k === 'phone' && (digits < 7 || digits > 16)) continue;
-        found.push({ p, pi, label, text: m[0], rects: hitRects(ix, m.index, m.index + m[0].length) });
-      }
-    }
+    for (const m of matchPersonal(ix, keys)) found.push({ p, pi, ...m });
     for (const w of words) {
       const needle = lowerKeep(w).replace(/\s+/g, ' ');
       for (let i = ix.lower.indexOf(needle); i >= 0; i = ix.lower.indexOf(needle, i + needle.length))
@@ -3539,6 +3702,336 @@ $('rdOk').addEventListener('click', () => {
   toast(`${rdFound.length} Fundstellen geschwärzt. Bitte prüfen – beim Speichern wird der Inhalt darunter entfernt.`, 5000);
 });
 $('rdCancel').addEventListener('click', () => { $('redactModal').hidden = true; });
+
+/* ---------- Versand-Check: what would leave the house without the sender noticing ---------- */
+const VC = { findings: [], passed: [], running: false, result: null, at: null };
+const VC_SEV = { high: ['Kritisch', '#c3362b'], mid: ['Prüfen', '#c07400'], info: ['Hinweis', '#5d6578'] };
+const MARKUP = /^\/(Text|FreeText|Highlight|Underline|StrikeOut|Squiggly|Ink|Square|Circle|Line|Polygon|PolyLine|Stamp|Caret|FileAttachment|Sound|Redact)$/;
+const areaOverlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+const isCovered = (r, list) => list.some(c => areaOverlap(r, c) >= r.w * r.h * 0.6);
+
+// runs of characters in a text item for which test(j, charRect) holds; spaces only join runs
+function charRuns(sg, test, minChars = 3) {
+  const n = sg.str.length, cw = sg.w / n, out = [], y = sg.base - sg.fh * 0.86, h = sg.fh * 1.12;
+  let a = -1, b = -1;
+  const flush = () => {
+    if (a >= 0) {
+      const t = sg.str.slice(a, b).trim(), core = t.replace(/\s/g, '').length;
+      if (core >= minChars || (core && t === sg.str.trim())) out.push({ a, b, text: t, rect: { x: sg.x + cw * a, y, w: cw * (b - a), h } });
+    }
+    a = -1;
+  };
+  for (let j = 0; j < n; j++) {
+    if (/\s/.test(sg.str[j])) { if (a >= 0) b = j + 1; continue; }
+    if (test(j, { x: sg.x + cw * j, y, w: cw, h })) { if (a < 0) a = j; b = j + 1; } else flush();
+  }
+  flush();
+  return out;
+}
+// text that is in the file but cannot be seen: where its letters should be, the page has a single colour
+// (black bars of a fake redaction, white text, text behind pictures)
+async function invisibleRuns(p, ix, skip) {
+  const segs = ix.segs.filter(sg => !sg.ocr && sg.horiz && sg.str && sg.str.trim());
+  if (!segs.length) return [];
+  const k = Math.min(2, Math.sqrt(12e6 / (p.w * p.h)));
+  const page = await S.sources[p.src].doc.getPage(p.idx + 1);
+  const vp = page.getViewport({ scale: k, rotation: 0 });
+  const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  const img = ctx.getImageData(0, 0, c.width, c.height).data, out = [];
+  for (const sg of segs) {
+    const y0 = Math.max(0, Math.floor((sg.base - sg.fh * 0.72) * k)), y1 = Math.min(c.height, Math.ceil((sg.base - sg.fh * 0.02) * k));
+    if (y1 - y0 < 3) continue;
+    const mean = [];
+    const runs = charRuns(sg, (j, r) => {
+      if (skip(r)) return false;
+      const x0 = Math.max(0, Math.floor(r.x * k)), x1 = Math.min(c.width, Math.ceil((r.x + r.w) * k));
+      if (x1 - x0 < 1) return false;
+      let lo = 255, hi = 0, sum = 0, n = 0;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const i = (y * c.width + x) * 4, l = 0.299 * img[i] + 0.587 * img[i + 1] + 0.114 * img[i + 2];
+        if (l < lo) lo = l; if (l > hi) hi = l; sum += l; n++;
+      }
+      mean[j] = sum / n;
+      return hi - lo <= 24;
+    });
+    const core = sg.str.replace(/\s/g, '').length;
+    for (let r of runs) {
+      const m = mean.slice(r.a, r.b).filter(v => v != null);
+      // character positions are estimated; if nearly the whole item is hidden, take all of it
+      if (r.text.replace(/\s/g, '').length >= core * 0.8) r = { ...r, a: 0, b: sg.str.length, text: sg.str.trim(), rect: { x: sg.x, y: sg.base - sg.fh * 0.86, w: sg.w, h: sg.fh * 1.12 } };
+      out.push({ ...r, white: m.reduce((x, v) => x + v, 0) / (m.length || 1) > 128 });
+    }
+  }
+  c.width = c.height = 0;
+  return out;
+}
+
+async function scanSources() {
+  const res = { comments: [], js: [], jsDoc: 0, exif: 0, versions: 0, fields: 0 };
+  const N = n => PDFName.of(n), str = v => (v && v.decodeText ? v.decodeText() : '');
+  for (const si of new Set(S.pages.map(p => p.src))) {
+    const src = S.sources[si];
+    const head = new TextDecoder('latin1').decode(src.bytes.subarray(0, 2048));
+    const eofs = (new TextDecoder('latin1').decode(src.bytes).match(/%%EOF/g) || []).length;
+    res.versions += Math.max(0, eofs - 1 - (/\/Linearized/.test(head) ? 1 : 0));
+    if (!src.plain) continue;
+    let lib;
+    try { lib = await PDFDocument.load(src.plain, { updateMetadata: false }); } catch { continue; }
+    const cat = lib.catalog, names = cat.lookupMaybe(N('Names'), PDFDict), oa = cat.lookupMaybe(N('OpenAction'), PDFDict);
+    if ((names && names.get(N('JavaScript'))) || cat.get(N('AA')) || (oa && /JavaScript|Launch/.test(String(oa.get(N('S')))))) res.jsDoc++;
+    const seen = new Set();
+    for (const p of S.pages) {
+      if (p.src !== si || seen.has(p.idx)) continue;
+      seen.add(p.idx);
+      const pi = S.pages.indexOf(p), node = lib.getPage(p.idx).node;
+      if (node.get(N('AA'))) res.js.push({ pi, text: 'Skript beim Öffnen/Schließen der Seite' });
+      const annots = node.Annots(); if (!annots) continue;
+      for (let i = 0; i < annots.size(); i++) {
+        const a = lib.context.lookup(annots.get(i)); if (!(a instanceof PDFDict)) continue;
+        const st = String(a.get(N('Subtype')));
+        if (MARKUP.test(st)) res.comments.push({ pi, text: [st.slice(1), str(a.get(N('T'))), str(a.get(N('Contents')))].filter(Boolean).join(': ').slice(0, 120) });
+        const act = a.lookupMaybe(N('A'), PDFDict);
+        if (a.get(N('AA')) || (act && /JavaScript|Launch|ImportData/.test(String(act.get(N('S')))))) res.js.push({ pi, text: st === '/Widget' ? 'Skript in einem Formularfeld' : 'Skript in einem Link oder Element' });
+      }
+    }
+    for (const [, obj] of lib.context.enumerateIndirectObjects())
+      if (obj instanceof PDFRawStream && isDctImage(obj.dict) && jpegMetaRanges(obj.contents).length) res.exif++;
+  }
+  for (const p of S.pages) {   // form fields that contain values
+    const { fields } = await widgetsFor(p);
+    for (const w of fields) { const v = fieldValue(p, w); if (Array.isArray(v) ? v.length : v) res.fields++; }
+  }
+  return res;
+}
+
+function vcShow(state) {
+  $('vcRun').hidden = state !== 'run';
+  $('vcBody').hidden = state === 'run';
+  ['vcFix', 'vcFixOnly', 'vcReport'].forEach(id => { $(id).hidden = state === 'run'; });
+}
+async function openVersandCheck() {
+  if (VC.running) return;
+  if (S.editing) commitEdit();
+  closePops(true);
+  VC.running = true; VC.result = null;
+  $('vcResult').hidden = true;
+  $('vcModal').hidden = false; vcShow('run');
+  const prog = $('vcProg'), status = t => { $('vcStatus').textContent = t; };
+  const F = [], passed = [];
+  try {
+    const personal = [], coveredT = [], invisible = [], n = S.pages.length;
+    for (const [pi, p] of S.pages.entries()) {
+      status(`Seite ${pi + 1} von ${n} wird geprüft …`); prog.value = pi / (n + 1);
+      const ix = await textIndex(p);
+      const reds = p.anns.filter(a => a.type === 'redact');
+      const covers = p.anns.filter(a => a.type === 'whiteout' || a.type === 'image' || ((a.type === 'rect' || a.type === 'ellipse') && a.fill));
+      for (const m of matchPersonal(ix, PD_PATTERNS.map(P => P.key))) if (!m.rects.every(r => isCovered(r, reds))) personal.push({ p, pi, ...m });
+      for (const sg of ix.segs) {
+        if (sg.ocr || !sg.horiz || !sg.str.trim()) continue;
+        for (const r of charRuns(sg, (j, cr) => isCovered(cr, covers) && !isCovered(cr, reds), 1))
+          coveredT.push({ p, pi, text: r.text, rects: [r.rect], white: true });
+      }
+      for (const h of await invisibleRuns(p, ix, cr => isCovered(cr, reds) || isCovered(cr, covers)))
+        invisible.push({ p, pi, text: h.text, rects: [h.rect], white: h.white });
+    }
+    status('Dokument wird geprüft …'); prog.value = n / (n + 1);
+    const src = await scanSources();
+    const go = (pi, rects) => ({ pi, rects });
+    if (personal.length) F.push({ key: 'personal', sev: 'high', title: 'Persönliche Daten im Text', n: personal.length,
+      desc: 'E-Mail-Adressen, Telefonnummern, IBAN, Steuer-ID, Sozialversicherungs- oder Kreditkartennummern und Geburtsdaten.',
+      items: personal.map(x => ({ ...go(x.pi, x.rects), text: `${x.label}: ${x.text}` })), fix: 'werden geschwärzt und beim Speichern aus der Datei entfernt', data: personal });
+    else passed.push('persönliche Daten');
+    if (coveredT.length) F.push({ key: 'covered', sev: 'high', title: 'Text nur abgedeckt, nicht entfernt', n: coveredT.length,
+      desc: 'Unter Abdeckungen, Formen oder Bildern steht noch Text. Wer die PDF bekommt, kann ihn markieren und kopieren.',
+      items: coveredT.map(x => ({ ...go(x.pi, x.rects), text: x.text })), fix: 'wird unter der Abdeckung wirklich entfernt', data: coveredT });
+    else passed.push('abgedeckter Text');
+    if (invisible.length) F.push({ key: 'invisible', sev: 'high', title: 'Unsichtbarer Text in der Datei', n: invisible.length,
+      desc: 'Text, der auf der Seite nicht zu sehen ist – z. B. unter schwarzen Balken einer falschen Schwärzung oder in weißer Schrift. Er lässt sich trotzdem kopieren.',
+      items: invisible.map(x => ({ ...go(x.pi, x.rects), text: x.text })), fix: 'wird entfernt, das Aussehen bleibt gleich', data: invisible });
+    else passed.push('unsichtbarer Text');
+    const M = S.meta || {}, metaList = [['Titel', M.title], ['Autor', M.author], ['Thema', M.subject], ['Stichwörter', M.keywords], ['Erstellt mit', M.creator], ['PDF-Erzeuger', M.producer]].filter(([, v]) => v);
+    if (metaList.length) F.push({ key: 'meta', sev: 'mid', title: 'Metadaten', n: metaList.length,
+      desc: 'Unsichtbare Angaben in den Dateieigenschaften, oft mit Namen oder internen Pfaden.',
+      items: metaList.map(([k, v]) => ({ text: `${k}: ${v}` })), fix: 'werden beim Speichern weggelassen' });
+    else passed.push('Metadaten');
+    const notes = S.pages.flatMap((p, pi) => p.anns.filter(a => a.type === 'note').map(a => ({ pi, text: 'Notiz: ' + (a.text || '(leer)') })));
+    const comments = [...src.comments, ...notes];
+    if (comments.length) F.push({ key: 'comments', sev: 'mid', title: 'Kommentare und Notizen', n: comments.length,
+      desc: 'Kommentare bleiben in der PDF erhalten und zeigen oft interne Absprachen und Namen.',
+      items: comments.map(x => ({ pi: x.pi, text: x.text })), fix: 'werden entfernt (Markierungen und Formen bleiben)' });
+    else passed.push('Kommentare');
+    const att = S.attach.map(id => S.attachStore.get(id)).filter(Boolean);
+    if (att.length) F.push({ key: 'attach', sev: 'mid', title: 'Angehängte Dateien', n: att.length,
+      desc: 'In der PDF stecken weitere Dateien, die beim Weitergeben mitgehen.',
+      items: att.map(a => ({ text: `${a.name} (${fmtSize(a.bytes.length)})` })), fix: 'werden entfernt' });
+    else passed.push('Anhänge');
+    if (src.fields) F.push({ key: 'forms', sev: 'mid', title: 'Ausgefüllte Formularfelder', n: src.fields,
+      desc: 'Eingetragene Werte lassen sich vom Empfänger ändern.', items: [], fix: 'werden fest eingebrannt (flach gespeichert)' });
+    if (src.js.length || src.jsDoc) F.push({ key: 'js', sev: 'mid', title: 'Skripte (JavaScript) und Aktionen', n: src.js.length + src.jsDoc,
+      desc: 'Skripte können beim Öffnen ausgeführt werden. Für normale Dokumente braucht es sie nicht.',
+      items: [...(src.jsDoc ? [{ text: 'Skript auf Dokumentebene' }] : []), ...src.js.map(x => ({ pi: x.pi, text: x.text }))], fix: 'werden entfernt' });
+    else passed.push('Skripte');
+    if (src.exif) F.push({ key: 'exif', sev: 'mid', title: 'Kameradaten in Fotos', n: src.exif,
+      desc: 'Fotos enthalten EXIF-Daten wie Kameramodell, Aufnahmezeit und manchmal den Aufnahmeort.', items: [], fix: 'werden verlustfrei aus den Fotos gelöscht' });
+    else passed.push('Kameradaten');
+    if (src.versions) F.push({ key: 'versions', sev: 'info', title: 'Frühere Fassungen in der Originaldatei', n: src.versions,
+      desc: 'Die geöffnete Datei wurde nachträglich geändert; ältere Stände lassen sich aus ihr wiederherstellen. Blattwerk schreibt beim Speichern eine neue Datei ohne diese Altstände.', items: [], auto: true });
+    const FLAG = { meta: 'strip', comments: 'stripComments', js: 'stripJs', exif: 'cleanImages', forms: 'flatten' }, so = S.saveOpts || {};
+    for (const f of F) if (FLAG[f.key] && so[FLAG[f.key]]) { f.handled = true; f.sev = 'info'; }
+    VC.findings = F; VC.passed = passed; VC.at = new Date();
+    vcRender();
+  } catch (err) {
+    console.error(err); $('vcModal').hidden = true;
+    toast('Die Prüfung ist fehlgeschlagen: ' + (err && err.message ? err.message : err), 6000);
+  } finally { VC.running = false; }
+}
+
+function vcRender() {
+  const F = VC.findings, high = F.filter(f => f.sev === 'high').length, mid = F.filter(f => f.sev === 'mid').length;
+  vcShow('done');
+  const sum = $('vcSummary');
+  sum.className = 'vcsum ' + (high ? 'bad' : mid ? 'warn' : 'ok');
+  sum.innerHTML = !high && !mid ? '<span class="vcbig">✓</span><span>Keine Probleme gefunden. Die PDF kann so weitergegeben werden.</span>'
+    : `<span class="vcbig">${high + mid}</span><span>${[high && `${high} kritisch`, mid && `${mid} zu prüfen`].filter(Boolean).join(', ')} – unten auswählen, was behoben werden soll.</span>`;
+  $('vcList').innerHTML = F.map((f, i) => {
+    const [lab, col] = VC_SEV[f.sev];
+    const items = f.items.slice(0, 60).map(it => `<li>${it.pi != null ? `<button class="vcgo" data-f="${i}" data-pi="${it.pi}" data-r='${esc(JSON.stringify(it.rects || []))}'>S. ${it.pi + 1}</button>` : ''}<span>${esc(it.text)}</span></li>`).join('')
+      + (f.items.length > 60 ? `<li><span class="muted">… und ${f.items.length - 60} weitere</span></li>` : '');
+    return `<div class="vcitem" style="--sev:${col}">
+      <label class="vchead">${f.fix && !f.handled ? `<input type="checkbox" data-k="${f.key}" ${f.sev !== 'info' ? 'checked' : ''}>` : ''}<b>${esc(f.title)}</b><span class="vcsev">${f.handled ? 'Erledigt beim Speichern' : lab}</span><span class="vccount">${f.n}</span></label>
+      <p>${esc(f.desc)}</p>
+      ${items ? `<details><summary>Fundstellen anzeigen</summary><ul>${items}</ul></details>` : ''}
+      <div class="vcfix">${f.handled ? 'Bereits eingestellt: ' + esc(f.fix) + ' – beim nächsten Speichern.' : f.fix ? 'Beim Beheben: ' + esc(f.fix) + '.' : f.auto ? 'Wird beim Speichern automatisch erledigt.' : 'Nur ein Hinweis.'}</div>
+    </div>`;
+  }).join('');
+  $('vcPassed').textContent = VC.passed.length ? 'Ohne Befund: ' + VC.passed.join(' · ') : '';
+  const fixable = F.some(f => f.fix && !f.handled);
+  $('vcFix').disabled = $('vcFixOnly').disabled = !fixable;
+  $('vcFix').textContent = fixable ? 'Beheben und sicher speichern' : 'Sicher speichern';
+  $('vcFix').disabled = false;
+}
+$('vcList').addEventListener('click', e => {
+  const b = e.target.closest('.vcgo'); if (!b) return;
+  const p = S.pages[+b.dataset.pi]; if (!p) return;
+  const rects = JSON.parse(b.dataset.r || '[]');
+  $('vcModal').hidden = true;
+  if (ORG.on) closeOrganize();
+  if (rects.length) { SR.q = ''; SR.hits = [{ pageId: p.id, rects }]; SR.cur = -1; showHits(); gotoHit(0); $('searchCount').textContent = ''; toast('Fundstelle markiert. Der Versand-Check lässt sich jederzeit erneut öffnen.'); }
+  else scrollToPage(p.id);
+});
+const vcChosen = () => new Set([...document.querySelectorAll('#vcList input[data-k]:checked')].map(c => c.dataset.k));
+
+// apply the chosen fixes to the document; returns the save options they need
+function vcApply(keys) {
+  const opts = {}, byKey = k => VC.findings.find(f => f.key === k);
+  const redactions = [];
+  for (const k of ['personal', 'covered', 'invisible']) {
+    const f = byKey(k); if (!f || !keys.has(k)) continue;
+    for (const x of f.data) for (const r of x.rects) redactions.push({ p: x.p, r, white: k !== 'personal' && x.white });
+  }
+  const touchState = redactions.length || (keys.has('comments') && S.pages.some(p => p.anns.some(a => a.type === 'note'))) || (keys.has('attach') && S.attach.length);
+  if (touchState) pushHistory();
+  for (const { p, r, white } of redactions) {
+    if (!S.pages.includes(p)) continue;
+    p.anns.push({ id: uid(), type: 'redact', x: r1(r.x - 1), y: r1(r.y - 1), w: r1(r.w + 2), h: r1(r.h + 2), ...(white ? { white: true } : {}) });
+  }
+  if (keys.has('comments')) { S.pages.forEach(p => { p.anns = p.anns.filter(a => a.type !== 'note'); }); opts.stripComments = true; }
+  if (keys.has('attach')) S.attach = [];
+  if (keys.has('meta')) opts.strip = true;
+  if (keys.has('forms')) opts.flatten = true;
+  if (keys.has('js')) opts.stripJs = true;
+  if (keys.has('exif')) opts.cleanImages = true;
+  if (touchState) { S.selected = null; S.pages.forEach(renderAnns); updateUI(); }
+  // later saves keep the cleaning switched on
+  S.saveOpts = { ...(S.saveOpts || {}), ...opts };
+  return opts;
+}
+$('vcFixOnly').addEventListener('click', () => {
+  const keys = vcChosen();
+  vcApply(keys);
+  $('vcModal').hidden = true;
+  toast(keys.size ? 'Behoben. Schwärzungen und Bereinigungen werden beim Speichern endgültig.' : 'Nichts ausgewählt.', 4500);
+});
+$('vcFix').addEventListener('click', async () => {
+  const keys = vcChosen(), F = VC.findings;
+  const secrets = ['personal', 'covered', 'invisible'].filter(k => keys.has(k)).flatMap(k => (F.find(f => f.key === k) || { data: [] }).data.map(x => ({ pi: x.pi, text: x.text })));
+  const opts = { ...(S.saveOpts || {}), ...vcApply(keys), name: baseName().replace(/-geprueft$/, '') + '-geprueft' };
+  $('vcFix').disabled = true; $('vcFix').textContent = 'Speichere …';
+  const bytes = await save(opts);
+  $('vcFix').disabled = false; $('vcFix').textContent = 'Beheben und sicher speichern';
+  if (!bytes) return;
+  $('vcResult').hidden = false; $('vcResult').innerHTML = '<span class="muted">Gespeicherte Datei wird nachgeprüft …</span>';
+  try {
+    VC.result = await vcVerify(bytes, opts, secrets, keys);
+    $('vcBody').hidden = true; $('vcFix').hidden = $('vcFixOnly').hidden = true;
+    vcRenderResult();
+  }
+  catch (err) { console.error(err); $('vcResult').textContent = 'Die Nachprüfung war nicht möglich: ' + (err.message || err); }
+});
+
+// open the saved file again and check that the removed things are really gone
+async function vcVerify(bytes, opts, secrets, keys) {
+  const doc = await pdfjsLib.getDocument({ isEvalSupported: false, data: bytes.slice(), password: opts.protect ? (opts.user || opts.owner) : undefined }).promise;
+  const pageText = [];
+  let comments = 0;
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    pageText.push(((await page.getTextContent()).items.map(t => t.str || '').join(' ')).toLowerCase().replace(/\s+/g, ''));
+    comments += (await page.getAnnotations()).filter(a => !/^(Widget|Link|Popup)$/.test(a.subtype)).length;
+  }
+  const { info } = await doc.getMetadata();
+  const att = await doc.getAttachments();
+  doc.destroy();
+  let exifLeft = null, jsLeft = null;
+  if (!opts.protect) {
+    const N = n => PDFName.of(n), lib = await PDFDocument.load(bytes, { updateMetadata: false });
+    exifLeft = 0; jsLeft = 0;
+    for (const [, obj] of lib.context.enumerateIndirectObjects()) {
+      if (obj instanceof PDFRawStream && isDctImage(obj.dict) && jpegMetaRanges(obj.contents).length) exifLeft++;
+      if (obj instanceof PDFDict && /\/(JavaScript|Launch)$/.test(String(obj.get(N('S'))))) jsLeft++;
+    }
+    for (const pg of lib.getPages()) if (pg.node.get(N('AA'))) jsLeft++;
+  }
+  const rows = [];
+  if (secrets.length) {
+    const left = secrets.filter(s => { const t = s.text.toLowerCase().replace(/\s+/g, ''); return t.length >= 3 && pageText[s.pi] && pageText[s.pi].includes(t); });
+    rows.push(left.length ? [false, `${left.length} von ${secrets.length} entfernten Angaben noch im Text: ${left.slice(0, 5).map(s => s.text).join(', ')}`]
+      : [true, `Alle ${secrets.length} entfernten Angaben sind nicht mehr im Text der Datei.`]);
+  }
+  if (keys.has('meta')) { const m = ['Title', 'Author', 'Subject', 'Keywords', 'Creator', 'Producer'].filter(k => info[k]); rows.push(m.length ? [false, 'Noch Metadaten vorhanden: ' + m.join(', ')] : [true, 'Keine Metadaten mehr.']); }
+  if (keys.has('comments')) rows.push(comments ? [false, `${comments} Kommentare noch vorhanden.`] : [true, 'Keine Kommentare mehr.']);
+  if (keys.has('attach')) rows.push(att && Object.keys(att).length ? [false, 'Anhänge noch vorhanden.'] : [true, 'Keine Anhänge mehr.']);
+  if (keys.has('exif')) rows.push(exifLeft ? [false, `${exifLeft} Fotos enthalten noch Kameradaten.`] : [true, 'Keine Kameradaten mehr in den Fotos.']);
+  if (keys.has('js')) rows.push(jsLeft ? [false, `${jsLeft} Skripte oder Aktionen noch vorhanden.`] : [true, 'Keine Skripte oder Aktionen mehr.']);
+  if (keys.has('forms')) rows.push([true, 'Formularwerte fest eingebrannt.']);
+  rows.push([true, 'Frühere Fassungen und eingebettete Dokument-Skripte werden in der neuen Datei nicht mitgeschrieben.']);
+  return { name: opts.name + '.pdf', size: bytes.length, rows, ok: rows.every(r => r[0]) };
+}
+function vcRenderResult() {
+  const R = VC.result;
+  $('vcResult').hidden = false;
+  $('vcResult').className = 'vcres ' + (R.ok ? 'ok' : 'bad');
+  $('vcResult').innerHTML = `<b>${R.ok ? '✓ Gespeichert und nachgeprüft' : '⚠ Gespeichert, aber nicht alles ist entfernt'}: ${esc(R.name)} (${fmtSize(R.size)})</b>` +
+    R.rows.map(([ok, t]) => `<div>${ok ? '✓' : '✗'} ${esc(t)}</div>`).join('');
+}
+
+// short report to keep with the file, e.g. for the data protection documentation
+$('vcReport').addEventListener('click', () => {
+  const L = [`Versand-Check – ${S.fileName}`, `Geprüft am ${(VC.at || new Date()).toLocaleString('de-DE')} mit Blattwerk PDF (lokal im Browser, ohne Upload)`, `${S.pages.length} Seiten`, ''];
+  if (!VC.findings.length) L.push('Keine Probleme gefunden.');
+  for (const f of VC.findings) {
+    L.push(`[${VC_SEV[f.sev][0]}] ${f.title}: ${f.n}`);
+    for (const it of f.items.slice(0, 200)) L.push(`  - ${it.pi != null ? 'S. ' + (it.pi + 1) + ': ' : ''}${it.text}`);
+    L.push(`  Behebung: ${f.fix || (f.auto ? 'automatisch beim Speichern' : 'Hinweis')}`, '');
+  }
+  if (VC.passed.length) L.push('Ohne Befund: ' + VC.passed.join(', '), '');
+  if (VC.result) { L.push(`Gespeichert als ${VC.result.name} – Nachprüfung:`); VC.result.rows.forEach(([ok, t]) => L.push(`  ${ok ? 'OK' : 'FEHLER'}: ${t}`)); }
+  saveBlob(baseName() + '-versandcheck.txt', new Blob(['﻿' + L.join('\n')], { type: 'text/plain;charset=utf-8' }));
+});
+$('vcClose').addEventListener('click', () => { $('vcModal').hidden = true; });
 
 /* ---------- save with options ---------- */
 function openSaveDialog(preset = {}) {
@@ -3609,7 +4102,7 @@ async function exportImages(fmt, dpi, idx) {
   try {
     if (!(await checkPerm('copy', pages)) || !(await checkPerm('save', pages))) return;
     toast('Bilder werden erstellt …', 60000);
-    const doc = await pdfjsLib.getDocument({ data: await exportPdf(pages) }).promise;
+    const doc = await pdfjsLib.getDocument({ isEvalSupported: false, data: await exportPdf(pages) }).promise;
     const files = [], ext = fmt === 'jpeg' ? 'jpg' : 'png', digits = String(S.pages.length).length;
     for (let i = 1; i <= doc.numPages; i++) {
       toast(`Seite ${i} von ${doc.numPages} wird gerendert …`, 60000);
@@ -3908,6 +4401,7 @@ const CMDS = [
   { g: 'Bearbeiten', label: 'Datei anhängen …', run: () => $('fileAttach').click() },
   { g: 'Bearbeiten', label: 'Rückgängig', keys: 'Strg+Z', run: undo },
   { g: 'Bearbeiten', label: 'Wiederholen', keys: 'Strg+Y', run: redo },
+  { g: 'Schützen', label: 'Versand-Check: vor dem Weitergeben prüfen', run: openVersandCheck },
   { g: 'Schützen', label: 'Schwärzen nach Muster (E-Mail, IBAN, Telefon, Begriffe) …', run: openRedact },
   { g: 'Schützen', label: 'Mit Passwort schützen …', run: () => openSaveDialog({ protect: true }) },
   { g: 'Ansicht', label: 'Suchen', keys: 'Strg+F', run: openSearch },
@@ -4009,7 +4503,7 @@ async function restoreSession(rec) {
     for (let i = 0; i < rec.srcCount; i++) {
       const bytes = await IDB.get('src:' + i);
       if (!bytes) throw new Error('Quelle fehlt');
-      sources.push({ bytes, plain: bytes, doc: await pdfjsLib.getDocument({ data: bytes.slice() }).promise, name: (rec.srcNames || [])[i] || rec.fileName, stored: true });
+      sources.push({ bytes, plain: bytes, doc: await pdfjsLib.getDocument({ isEvalSupported: false, data: bytes.slice() }).promise, name: (rec.srcNames || [])[i] || rec.fileName, stored: true });
     }
     S.sources.forEach(s => { try { s.doc.destroy(); } catch {} });
     clearCaches();
@@ -4124,7 +4618,7 @@ const ACTIONS = {
   pattern: openRedact, password: () => openSaveDialog({ protect: true }), strip: () => openSaveDialog({ strip: true }),
   fitw: () => fitWidth(false), fitp: fitPage, twoup: () => setTwoUp(!S.view.twoUp), read: () => toggleRead(true),
   sidebar: () => toggleSidebar(), theme: cycleTheme, palette: openPalette,
-  prevpage: () => stepPage(-1), nextpage: () => stepPage(1),
+  prevpage: () => stepPage(-1), nextpage: () => stepPage(1), check: openVersandCheck,
   zoomin: () => zoomStep(1), zoomout: () => zoomStep(-1)
 };
 document.addEventListener('click', e => {
