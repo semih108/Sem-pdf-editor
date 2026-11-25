@@ -3,6 +3,12 @@
 <title>Blattwerk PDF</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
+/* Schriften lokal gehostet (SIL OFL 1.1, siehe fonts/LICENSE-*.txt) - keine Anfragen an Google */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
 /* Layout: app shell — top bar, tool strip, page thumbnails left, scrolling "desk" with white sheets, status bar */
 :root {
   --bg: #eceef3;
@@ -1091,7 +1097,7 @@ function redo() { if (!S.redo.length) return; S.undo.push(snapshot()); restore(S
 async function loadSource(bytes, name) {
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let usedPw = '', cancelled = false;
-  const task = pdfjsLib.getDocument({ isEvalSupported: false, data: data.slice() });
+  const task = pdfjsLib.getDocument({ isEvalSupported: false /* CVE-2024-4367 */, data: data.slice() });
   task.onPassword = async (update, reason) => {
     const pw = await askPassword('Passwort erforderlich', reason === pdfjsLib.PasswordResponses.INCORRECT_PASSWORD
       ? `Das Passwort für „${name}“ ist nicht richtig. Bitte noch einmal versuchen.`
@@ -3337,7 +3343,7 @@ async function printDoc() {
   try {
     if (!(await checkPerm('print'))) return;
     toast('Druckansicht wird vorbereitet …', 60000);
-    const doc = await pdfjsLib.getDocument({ isEvalSupported: false, data: await exportPdf() }).promise;
+    const doc = await pdfjsLib.getDocument({ isEvalSupported: false /* CVE-2024-4367 */, data: await exportPdf() }).promise;
     const k = doc.numPages > 60 ? 1.4 : 2;
     for (let i = 1; i <= doc.numPages; i++) {
       const page = await doc.getPage(i);
@@ -4102,7 +4108,7 @@ async function exportImages(fmt, dpi, idx) {
   try {
     if (!(await checkPerm('copy', pages)) || !(await checkPerm('save', pages))) return;
     toast('Bilder werden erstellt …', 60000);
-    const doc = await pdfjsLib.getDocument({ isEvalSupported: false, data: await exportPdf(pages) }).promise;
+    const doc = await pdfjsLib.getDocument({ isEvalSupported: false /* CVE-2024-4367 */, data: await exportPdf(pages) }).promise;
     const files = [], ext = fmt === 'jpeg' ? 'jpg' : 'png', digits = String(S.pages.length).length;
     for (let i = 1; i <= doc.numPages; i++) {
       toast(`Seite ${i} von ${doc.numPages} wird gerendert …`, 60000);
@@ -4503,7 +4509,7 @@ async function restoreSession(rec) {
     for (let i = 0; i < rec.srcCount; i++) {
       const bytes = await IDB.get('src:' + i);
       if (!bytes) throw new Error('Quelle fehlt');
-      sources.push({ bytes, plain: bytes, doc: await pdfjsLib.getDocument({ isEvalSupported: false, data: bytes.slice() }).promise, name: (rec.srcNames || [])[i] || rec.fileName, stored: true });
+      sources.push({ bytes, plain: bytes, doc: await pdfjsLib.getDocument({ isEvalSupported: false /* CVE-2024-4367 */, data: bytes.slice() }).promise, name: (rec.srcNames || [])[i] || rec.fileName, stored: true });
     }
     S.sources.forEach(s => { try { s.doc.destroy(); } catch {} });
     clearCaches();
